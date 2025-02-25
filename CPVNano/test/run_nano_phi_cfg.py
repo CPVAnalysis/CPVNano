@@ -14,7 +14,7 @@ options.register('doSignal'                , True            , VarParsing.multip
 #options.register('doHNL'                   , False           , VarParsing.multiplicity.singleton, VarParsing.varType.bool  , "Run the HNLToMuPiBuilder"               )
 #options.register('doTagAndProbe'           , False           , VarParsing.multiplicity.singleton, VarParsing.varType.bool  , "Run the TagAndProbeJpsiToMuMu"          )
 options.register('doGeneral'               , False           , VarParsing.multiplicity.singleton, VarParsing.varType.bool  , "Run without builder"                    )
-options.register('addTriggerMuonCollection', False           , VarParsing.multiplicity.singleton, VarParsing.varType.bool  , "Add the TriggerMuon_* branches"         )
+options.register('addTriggerMuonCollection', True            , VarParsing.multiplicity.singleton, VarParsing.varType.bool  , "Add the TriggerMuon_* branches"         )
 options.register('addProbeTracksCollection', False           , VarParsing.multiplicity.singleton, VarParsing.varType.bool  , "Add the ProbeTracks_* branches"         )
 options.register('skipDuplicated'          , True            , VarParsing.multiplicity.singleton, VarParsing.varType.bool  , "Skip duplicated events. True by default")
 options.register('globalTag'               ,'NOTSET'         , VarParsing.multiplicity.singleton, VarParsing.varType.string, "Set global tag"                         )
@@ -44,7 +44,7 @@ outputFileFEVT = cms.untracked.string('_'.join(['BParkFullEvt', extension[option
 
 if not options.inputFiles:
     options.inputFiles = ['/store/data/Run2018D/ParkingBPH1/MINIAOD/05May2019promptD-v1/270000/F85EA23D-7ACA-CC47-ABA5-3F0D8DFFE32E.root'] if not options.isMC else \
-                         ['file:/eos/user/a/anlyon/CPVGen/102X_crab_v0/BsToPhiPhiTo4K/crab_102X_crab_v0_BsToPhiPhiTo4K_20250130_141241/250130_131709/0000/step4_115.root']
+                         ['file:%s' %i for i in glob('/eos/user/a/anlyon/CPVGen/102X_crab_trgmu_filter/BsToPhiPhiTo4K/crab_102X_crab_trgmu_filter_BsToPhiPhiTo4K_20250212_225911/250212_215924/0000/step4_*.root')]
 
 annotation = '%s nevts:%d' % (outputFileNANO, options.maxEvents)
 
