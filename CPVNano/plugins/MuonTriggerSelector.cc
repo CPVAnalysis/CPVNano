@@ -391,6 +391,8 @@ void MuonTriggerSelector::produce(edm::Event& iEvent, const edm::EventSetup& iSe
         }
     }
 
+    //bool at_least_one_triggering_muon = 0;
+
     // add the slimmed muons to the collection 
     for(const pat::Muon & slimmed_muon : *slimmed_muons){
       unsigned int iMuo(&slimmed_muon - &(slimmed_muons->at(0)));
@@ -420,6 +422,11 @@ void MuonTriggerSelector::produce(edm::Event& iEvent, const edm::EventSetup& iSe
       ETHmuons_out->back().addUserFloat("dzS", slimmed_muon.dB(slimmed_muon.PVDZ)/slimmed_muon.edB(slimmed_muon.PVDZ));
       ETHmuons_out->back().addUserFloat("dxy", slimmed_muon.dB(slimmed_muon.PV2D));
       ETHmuons_out->back().addUserFloat("dxyS", slimmed_muon.dB(slimmed_muon.PV2D)/slimmed_muon.edB(slimmed_muon.PV2D));
+
+      // check if at least one triggering muon in the event
+      //if(muonIsTriggerBPark[iMuo]){
+      //   at_least_one_triggering_muon = 1;
+      //}
 
       // computing the IP with respect to the beamspot
       // first, a la R(D*)
@@ -473,6 +480,8 @@ void MuonTriggerSelector::produce(edm::Event& iEvent, const edm::EventSetup& iSe
       ETHmuons_out->back().addUserFloat("dsaToSlimmedMatching_deltadzRel", -99.);
       ETHmuons_out->back().addUserInt("passDSAMuonID", -99);
     }
+
+    //std::cout << "at least one triggering muon: " << at_least_one_triggering_muon << std::endl;
 
     // add the displaced standalone muons to the collection
     if(add_dsa_){
