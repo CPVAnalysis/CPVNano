@@ -261,10 +261,16 @@ triggerMuonsMCMatchEmbedded = cms.EDProducer(
     matching = cms.InputTag('muonsTriggerBParkMCMatchForTable')
 )
 
-muonBParkSequence = cms.Sequence(muonTrgSelector * countTrgMuons)
-#muonBParkSequence = cms.Sequence(muonTrgSelector)
+# saving events with trigger muon only
+#muonBParkSequence = cms.Sequence(muonTrgSelector * countTrgMuons)
+#muonBParkMC = cms.Sequence(muonTrgSelector + muonsBParkMCMatchForTable + selectedMuonsMCMatchEmbedded + muonBParkMCTable * countTrgMuons)
+#muonBParkMCWithTriggerMuon = cms.Sequence(muonBParkMC + muonsTriggerBParkMCMatchForTable + triggerMuonsMCMatchEmbedded + muonTriggerBParkMCTable * countTrgMuons)
 
+# saving events with or without trigger muon
+muonBParkSequence = cms.Sequence(muonTrgSelector)
 muonBParkMC = cms.Sequence(muonTrgSelector + muonsBParkMCMatchForTable + selectedMuonsMCMatchEmbedded + muonBParkMCTable)
 muonBParkMCWithTriggerMuon = cms.Sequence(muonBParkMC + muonsTriggerBParkMCMatchForTable + triggerMuonsMCMatchEmbedded + muonTriggerBParkMCTable)
+
+# saving table
 muonBParkTables = cms.Sequence(muonBParkTable)
 muonTriggerMatchedTables = cms.Sequence(muonTriggerBParkTable)
