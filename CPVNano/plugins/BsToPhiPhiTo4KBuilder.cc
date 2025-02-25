@@ -184,11 +184,11 @@ void BsToPhiPhiTo4KBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSe
       //std::cout << k1_ptr->mass() << " " << k2_ptr->mass() << " " << k3_ptr->mass() << " " << k4_ptr->mass() << std::endl;
 
       if(k3_idx == k1_idx || k3_idx == k2_idx) {
-        std::cout << "I skip candidate" << std::endl;
+        //std::cout << "I skip candidate" << std::endl;
         continue;
       }
       if(k4_idx == k1_idx || k4_idx == k2_idx){
-        std::cout << "I skip candidate" << std::endl;
+        //std::cout << "I skip candidate" << std::endl;
         continue;
       }
 
@@ -260,6 +260,7 @@ void BsToPhiPhiTo4KBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSe
       Bs_cand.addUserFloat("Bs_fitted_eta" , fit_p4.eta());
       Bs_cand.addUserFloat("Bs_fitted_phi" , fit_p4.phi());
       Bs_cand.addUserFloat("Bs_fitted_mass", fit_p4.mass());      
+      Bs_cand.addUserFloat("Bs_fitted_mass_corr", fit_p4.mass() - (fitter_Bs.daughter_p4(0) + fitter_Bs.daughter_p4(1)).mass() + 1.0195 - (fitter_Bs.daughter_p4(2) + fitter_Bs.daughter_p4(3)).mass() + 1.0195); 
       Bs_cand.addUserFloat("Bs_fitted_massErr", sqrt(fitter_Bs.fitted_candidate().kinematicParametersError().matrix()(6,6))); 
       Bs_cand.addUserFloat("Bs_charge", Bs_cand.charge());
       Bs_cand.addUserFloat("Bs_cos_theta_2D", cos_theta_2D(fitter_Bs, *beamspot, fit_p4));

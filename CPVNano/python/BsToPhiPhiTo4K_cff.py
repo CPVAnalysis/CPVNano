@@ -236,6 +236,7 @@ BsToPhiPhiTo4KTable = cms.EDProducer(
         Bs_sv_ndof = ufloat('Bs_sv_ndof'),
         Bs_sv_prob = ufloat('Bs_sv_prob'),
         Bs_mass = ufloat('Bs_fitted_mass'),
+        Bs_mass_corr = ufloat('Bs_fitted_mass_corr'),
         Bs_massErr = ufloat('Bs_fitted_massErr'),
         Bs_pt = ufloat('Bs_fitted_pt'),
         Bs_eta = ufloat('Bs_fitted_eta'),
