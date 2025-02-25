@@ -29,3 +29,17 @@ Build everything
 scram b -j 8
 ```
 
+## After first installation
+
+```
+cd CMSSW_10_2_15/src/PhysicsTools/CPVNano
+source create_singularity.sh
+source setup.sh
+```
+
+Activate the proxy
+
+```
+voms-proxy-init --voms cms --valid 186:00
+```
+
