@@ -2,16 +2,6 @@ import os
 import sys
 import ROOT
 
-'''
-  This script aims at retrieving what is the proportion of events at miniAOD level
-  that are in the muon, electron channels respectively
-'''
-
-def getOptions():
-  from argparse import ArgumentParser
-  parser = ArgumentParser(description='Script to analyse gen particles from miniAOD samples', add_help=True)
-  parser.add_argument('--f', type=str, dest='f', help='inputfile name', default='bparknano.root')
-  return parser.parse_args()
 
 
 def analyse():
