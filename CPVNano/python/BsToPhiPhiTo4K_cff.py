@@ -7,17 +7,25 @@ PhiToKK = cms.EDProducer(
     kaonsTransientTracks = cms.InputTag('tracksBPark', 'SelectedTransientTracks'),
     genParticles = cms.InputTag("finalGenParticlesBPark"),
     isMC = cms.bool(False),
-    #isMC = cms.bool(True), #FIXME
     beamSpot = cms.InputTag("offlineBeamSpot"),
 
     k1_selection = cms.string(''), #cms.string('pt > 1.5'),
     k2_selection = cms.string(''),
-    #preVtxSelection = cms.string('abs(userCand("l1").vz - userCand("l2").vz) <= 1. && mass() < 5 '
-    #                             '&& mass() > 0 && charge() == 0 && userFloat("lep_deltaR") > 0.03'),
-    #preVtxSelection = cms.string('userFloat("lep_deltaR") > 0.03'),
 
-    pre_vtx_selection_phi = cms.string('abs(mass-1.0195)<0.05 && userFloat("deltaR_prefit")<0.5'), #TODO add sum/product of pt?
-    post_vtx_selection_phi = cms.string('abs(userFloat("phi_fitted_mass")-1.0195)<0.015 && userFloat("phi_fitted_k1_pt")>0.8 && userFloat("phi_fitted_k2_pt")>0.7 && userFloat("deltaR_postfit")<0.25 && userFloat("phi_sv_prob")>0.01'),
+    pre_vtx_selection_phi = cms.string(' && '.join([
+            'abs(mass-1.0195)<0.05',
+            'userFloat("deltaR_prefit")<0.5',
+            'charge()==0',
+        ])
+    ),
+    post_vtx_selection_phi = cms.string(' && '.join([
+            'abs(userFloat("phi_fitted_mass")-1.0195)<0.015',
+            'userFloat("phi_fitted_k1_pt")>0.8',
+            'userFloat("phi_fitted_k2_pt")>0.7',
+            'userFloat("deltaR_postfit")<0.25',
+            'userFloat("phi_sv_prob")>0.01',
+        ])
+    ),
     #post_vtx_selection_phi = cms.string('abs(userFloat("phi_fitted_mass")-1.0195)<0.015 && userFloat("phi_fitted_k1_pt")>0.8 && userFloat("phi_fitted_k2_pt")>0.7 && userFloat("deltaR_postfit")<0.25 && userFloat("phi_sv_prob")>0.01 && userFloat("phi_cos_theta_2D")>0.85'),
 
     # tight preselection
@@ -70,7 +78,6 @@ BsToPhiPhiTo4K = cms.EDProducer(
         'userFloat("deltaR_max") < 2.5', 
         'userFloat("Bs_lxy_sig") > 1',
         'userFloat("Bs_sv_prob") > 0.001', 
-        'userFloat("Bs_cos_theta_2D") > 0.9', 
         'abs(userFloat("Bs_fitted_mass")-5.367)<0.3',
         ])
     ),
@@ -96,9 +103,9 @@ PhiToKKTable = cms.EDProducer(
     singleton=cms.bool(False),
     extension=cms.bool(False),
     variables=cms.PSet(
-        phi_sv_chi2 = ufloat('phi_sv_chi2'),
-        phi_sv_ndof = ufloat('phi_sv_ndof'),
-        phi_sv_prob = ufloat('phi_sv_prob'),
+        sv_chi2 = ufloat('phi_sv_chi2'),
+        sv_ndof = ufloat('phi_sv_ndof'),
+        sv_prob = ufloat('phi_sv_prob'),
         phi_vx = ufloat('phi_vx'),
         phi_vy = ufloat('phi_vy'),
         phi_vz = ufloat('phi_vz'),
@@ -108,17 +115,17 @@ PhiToKKTable = cms.EDProducer(
         phi_cyx = ufloat('phi_vtx_cyx'),
         phi_czx = ufloat('phi_vtx_czx'),
         phi_czy = ufloat('phi_vtx_czy'),
-        phi_mass = ufloat('phi_fitted_mass'),
+        mass = ufloat('phi_fitted_mass'),
         phi_masserr = ufloat('phi_fitted_massErr'),
-        phi_pt = ufloat('phi_fitted_pt'),
-        phi_eta = ufloat('phi_fitted_eta'),
-        phi_phi = ufloat('phi_fitted_phi'),
+        pt = ufloat('phi_fitted_pt'),
+        eta = ufloat('phi_fitted_eta'),
+        phi = ufloat('phi_fitted_phi'),
         phi_charge = ufloat('phi_charge'),
         phi_cos2D = ufloat('phi_cos_theta_2D'),
 
         k1_idx = uint('k1_idx'),
         k2_idx = uint('k2_idx'),
-        phi_k1_pt = ufloat('phi_fitted_k1_pt'),
+        k1_pt = ufloat('phi_fitted_k1_pt'),
         phi_k1_eta = ufloat('phi_fitted_k1_eta'),
         phi_k1_phi = ufloat('phi_fitted_k1_phi'),
         phi_k1_mass = ufloat('phi_fitted_k1_mass'),
@@ -154,7 +161,7 @@ PhiToKKTable = cms.EDProducer(
         phi_k1_covQopPhi = ufloat('phi_k1_covQopPhi'),
         phi_k1_covLamPhi = ufloat('phi_k1_covLamPhi'),
 
-        phi_k2_pt = ufloat('phi_fitted_k2_pt'),
+        k2_pt = ufloat('phi_fitted_k2_pt'),
         phi_k2_eta = ufloat('phi_fitted_k2_eta'),
         phi_k2_phi = ufloat('phi_fitted_k2_phi'),
         phi_k2_mass = ufloat('phi_fitted_k2_mass'),
