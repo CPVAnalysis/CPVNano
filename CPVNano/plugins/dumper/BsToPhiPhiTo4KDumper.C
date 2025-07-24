@@ -369,7 +369,7 @@ Bool_t BsToPhiPhiTo4KDumper::Process(Long64_t entry)
    //
    // The return value is currently not used.
 
-   fReader.SetEntry(entry);
+   fReader.SetLocalEntry(entry);
 
    // for data, we skip the event in case it doesn't pass the lumi mask
    if(!isMC && lumiMask(*run, *luminosityBlock) == false) return false;
@@ -673,6 +673,11 @@ void BsToPhiPhiTo4KDumper::Terminate()
    signal_tree->Write("", TObject::kOverwrite);
 
    my_file->Close();
+
+   TString option = GetOption();
+   TString outFileName = option;
+
+   std::cout << outFileName << " created" << std::endl;
 
    cout << "- End Bs->PhiPhi->4K Dumper -" << endl;
 
