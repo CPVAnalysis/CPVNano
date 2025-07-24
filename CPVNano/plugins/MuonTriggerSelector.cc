@@ -168,6 +168,7 @@ void MuonTriggerSelector::produce(edm::Event& iEvent, const edm::EventSetup& iSe
     const reco::Vertex & PV = vertexHandle->front();
 
     //std::cout << std::endl;
+    //std::cout << std::endl << "number of muons:" << slimmed_muons->size() << std::endl;
 
     //////////////////////////////
     /* method 1 */
@@ -281,6 +282,7 @@ void MuonTriggerSelector::produce(edm::Event& iEvent, const edm::EventSetup& iSe
             if(matcher[iMuo][path]!=1000. && DR[iMuo][path]<max_deltaR_trigger_matching_ && fabs(DPT[iMuo][path])<max_deltaPtRel_trigger_matching_ && DR[iMuo][path]!=10000){
               muonIsTrigger[iMuo]=1;
               // BParking trigger lines correspond to the 10 first element (0 to 9) of the HLTPaths vector
+              //FIXME
               if(path < 10) muonIsTriggerBPark[iMuo]=1;
               muonDR[iMuo]=DR[iMuo][path];
               muonDPT[iMuo]=DPT[iMuo][path];                
@@ -383,6 +385,11 @@ void MuonTriggerSelector::produce(edm::Event& iEvent, const edm::EventSetup& iSe
     // And now create a collection with trg muons from bParking line (10 first elements of HLTPaths)
     for(const pat::Muon & muon : *slimmed_muons){
         unsigned int iMuo(&muon -&(slimmed_muons->at(0)));
+
+        if(muon.pt()<selmu_ptMin_) continue;
+        if(fabs(muon.eta())>selmu_absEtaMax_) continue;
+
+        //FIXME this is only valid for 2018
         if(muonIsTrigger[iMuo]==1 && (fires[iMuo][0]==1 || fires[iMuo][1]==1 || fires[iMuo][2]==1 || 
           fires[iMuo][3]==1 || fires[iMuo][4]==1 || fires[iMuo][5]==1 || fires[iMuo][6]==1 || 
           fires[iMuo][7]==1 || fires[iMuo][8]==1 || fires[iMuo][9]==1)){
@@ -398,13 +405,18 @@ void MuonTriggerSelector::produce(edm::Event& iEvent, const edm::EventSetup& iSe
       unsigned int iMuo(&slimmed_muon - &(slimmed_muons->at(0)));
       if(slimmed_muon.pt()<selmu_ptMin_) continue;
       if(fabs(slimmed_muon.eta())>selmu_absEtaMax_) continue;
+      //std::cout << "after the kin selection" << std::endl;
 
       const reco::TransientTrack muonTT((*(slimmed_muon.bestTrack())),&(*bFieldHandle)); //sara:check,why not using inner track for muons? GM: What is this and why do we need this???
       if(!muonTT.isValid()) continue; // GM: and why do we skip this muon if muonTT is invalid? This seems to have no effect so I kept it.
+      //std::cout << "after the muonTT selection" << std::endl;
+
+      // transient track collection
       trans_muons_out->emplace_back(muonTT);
 
       //std::cout << "slimmed muon " << iMuo << " pt " << slimmed_muon.pt()  << " eta " << slimmed_muon.eta() << std::endl;
       
+      // muon collection
       pat::ETHMuon the_muon(slimmed_muon);
       ETHmuons_out->emplace_back(the_muon);
 
