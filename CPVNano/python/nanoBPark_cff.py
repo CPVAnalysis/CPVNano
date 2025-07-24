@@ -53,7 +53,7 @@ def nanoAOD_customizeTriggerBitsBPark(process):
 
 def nanoAOD_customizeBsToPhiPhiTo4K(process, isMC=False):
     if isMC == False:
-      process.nanoBsToPhiPhiTo4KSequence = cms.Sequence( PhiToKKSequence + BsToPhiPhiTo4KSequence + PhiToKKTable + BsToPhiPhiTo4KTable )
+      process.nanoBsToPhiPhiTo4KSequence = cms.Sequence( PhiToKKSequence + BsToPhiPhiTo4KSequence + PhiToKKTable + BsToPhiPhiTo4KTable + CountPhiToKK)
     else:
       process.nanoBsToPhiPhiTo4KSequence = cms.Sequence( PhiToKKSequenceMC + BsToPhiPhiTo4KSequenceMC + PhiToKKTable + BsToPhiPhiTo4KTable )
     return process
