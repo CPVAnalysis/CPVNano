@@ -34,7 +34,7 @@ tracksBPark = cms.EDProducer('TrackMerger',
                              # clean tracks wrt electrons (checked that not relevant for our study)
                              do_el_cleaning = cms.bool(False),
                              # request PackedCandidate to have high purity
-                             do_trk_highpurity = cms.bool(False),
+                             do_trk_highpurity = cms.bool(True),
 
                              dcaSig = cms.double(-100000),
                              trkNormChiMin = cms.int32(-1),
@@ -52,9 +52,9 @@ trackBParkTable = cms.EDProducer(
     extension = cms.bool(False), 
     variables = cms.PSet(
         CandVars,
-        vx = Var("vx()", float, doc="x coordinate of vertex position, in cm", precision=10),
-        vy = Var("vy()", float, doc="y coordinate of vertex position, in cm", precision=10),
-        vz = Var("vz()", float, doc="z coordinate of vertex position, in cm", precision=10),
+        vx = Var("vx()", float, doc="x coordinate of vertex position, in cm"),
+        vy = Var("vy()", float, doc="y coordinate of vertex position, in cm"),
+        vz = Var("vz()", float, doc="z coordinate of vertex position, in cm"),
         isPacked = Var("userInt('isPacked')",int,doc="track from packedCandidate collection", precision=10),
         isLostTrk = Var("userInt('isLostTrk')",int,doc="track from lostTrack collection", precision=10),
         dz = Var("userFloat('dz')",float,doc="dz (with sign) wrt first PV, in cm", precision=10),
