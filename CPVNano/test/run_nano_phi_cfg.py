@@ -20,7 +20,6 @@ options.register('skipDuplicated'          , True            , VarParsing.multip
 options.register('globalTag'               ,'NOTSET'         , VarParsing.multiplicity.singleton, VarParsing.varType.string, "Set global tag"                         )
 options.register('wantSummary'             , True            , VarParsing.multiplicity.singleton, VarParsing.varType.bool  , "Run this on real data"                  )
 options.register('reportEvery'             , 1000            , VarParsing.multiplicity.singleton, VarParsing.varType.int   , "report every N events"                  )
-#options.register('reportEvery'             , 1            , VarParsing.multiplicity.singleton, VarParsing.varType.int   , "report every N events"                  )
 options.register('skip'                    ,  0              , VarParsing.multiplicity.singleton, VarParsing.varType.int   , "skip first N events"                    )
 options.register('inputFile'               , None            , VarParsing.multiplicity.singleton, VarParsing.varType.string, "inputFile name"                         )
 options.register('outFile'                 , 'bparknano.root', VarParsing.multiplicity.singleton, VarParsing.varType.string, "outputFile name"                        )
@@ -34,6 +33,7 @@ options.parseArguments()
 #FIXME! update GT to ultralegacy one? Use '106X_dataRun2_v37' according to https://twiki.cern.ch/twiki/bin/view/CMS/PdmVRun2LegacyAnalysis ?
 #FIXME! Update golden JSON!
 globaltag = '102X_dataRun2_v11' if not options.isMC else '102X_upgrade2018_realistic_v15'
+#globaltag = '102X_dataRun2_v11' if not options.isMC else '106X_upgrade2018_realistic_v11_L1v1'
 if options._beenSet['globalTag']:
     globaltag = options.globalTag
 
@@ -44,7 +44,8 @@ outputFileFEVT = cms.untracked.string('_'.join(['BParkFullEvt', extension[option
 
 if not options.inputFiles:
     options.inputFiles = ['/store/data/Run2018D/ParkingBPH1/MINIAOD/05May2019promptD-v1/270000/F85EA23D-7ACA-CC47-ABA5-3F0D8DFFE32E.root'] if not options.isMC else \
-                         ['file:%s' %i for i in glob('/eos/user/a/anlyon/CPVGen/102X_crab_trgmu_filter/BsToPhiPhiTo4K/crab_102X_crab_trgmu_filter_BsToPhiPhiTo4K_20250212_225911/250212_215924/0000/step4_*.root')]
+                         ['file:%s' %i for i in glob('/afs/cern.ch/work/a/anlyon/CPVAnalysis/CPVGen/CMSSW_10_6_28/src/CPVGen/crab/production/test_RM/step_MINI.root')]
+                         #['file:%s' %i for i in glob('/eos/user/a/anlyon/CPVGen/102X_crab_trgmu_filter/BsToPhiPhiTo4K/crab_102X_crab_trgmu_filter_BsToPhiPhiTo4K_20250212_225911/250212_215924/0000/step4_509.root')]
 
 annotation = '%s nevts:%d' % (outputFileNANO, options.maxEvents)
 
@@ -130,7 +131,7 @@ process.GlobalTag = GlobalTag(process.GlobalTag, globaltag, '')
 from PhysicsTools.CPVNano.nanoBPark_cff import *
 process = nanoAOD_customizeMuonTriggerBPark      (process, addTriggerMuonCollection=options.addTriggerMuonCollection)
 process = nanoAOD_customizeTrackFilteredBPark    (process, addProbeTracksCollection=options.addProbeTracksCollection)
-process = nanoAOD_customizeBsToPhiPhiTo4K             (process, isMC=options.isMC)
+process = nanoAOD_customizeBsToPhiPhiTo4K        (process, isMC=options.isMC)
 #process = nanoAOD_customizeBToMuMuPi             (process, isMC=options.isMC)
 #process = nanoAOD_customizeBToKMuMu              (process, isMC=options.isMC) 
 #process = nanoAOD_customizeHNLToMuPi             (process, isMC=options.isMC)
@@ -139,7 +140,10 @@ process = nanoAOD_customizeTriggerBitsBPark      (process)
 
 # Path and EndPath definitions
 process.nanoAOD_general_step = cms.Path(process.nanoSequence)
-process.nanoAOD_BsToPhiPhiTo4K_step = cms.Path(process.nanoSequence + process.nanoBsToPhiPhiTo4KSequence + CountBsToPhiPhiTo4K )
+process.nanoAOD_BsToPhiPhiTo4K_step = cms.Path(process.nanoSequence + process.nanoBsToPhiPhiTo4KSequence + CountBsToPhiPhiTo4K)
+
+
+
 #process.nanoAOD_MuMuPi_step = cms.Path(process.nanoSequence + process.nanoBMuMuPiSequence + CountBToMuMuPi )
 #process.nanoAOD_KMuMu_step  = cms.Path(process.nanoSequence + process.nanoBKMuMuSequence + CountBToKmumu ) 
 #process.nanoAOD_HNLToMuPi_step = cms.Path(process.nanoSequence + process.nanoHNLToMuPiSequence + CountHNLToMuPi )
