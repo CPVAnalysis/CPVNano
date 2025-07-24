@@ -1,9 +1,8 @@
 import FWCore.ParameterSet.Config as cms
 from PhysicsTools.NanoAOD.common_cff import *
 
-
-# make sure that the BPark HLT lines correspond to the 10 first elements
-Path=["HLT_Mu7_IP4","HLT_Mu8_IP6","HLT_Mu8_IP5","HLT_Mu8_IP3","HLT_Mu8p5_IP3p5","HLT_Mu9_IP6","HLT_Mu9_IP5","HLT_Mu9_IP4","HLT_Mu10p5_IP3p5","HLT_Mu12_IP6", "HLT_Mu8_v1", "HLT_Mu8_v12", "HLT_Mu7p5_Track7_Jpsi_v11", "HLT_L2Mu23NoVtx_2Cha_v1", "HLT_L2Mu23NoVtx_2Cha_CosmicSeed_v1", "DST_DoubleMu1_noVtx_CaloScouting_v2", "DST_DoubleMu3_noVtx_CaloScouting_v6", "DST_DoubleMu3_noVtx_Mass10_PFScouting_v3", "HLT_BTagMu_AK4DiJet40_Mu5_v13"]
+#FIXME add lines for 2022 and 2024
+Path=["HLT_Mu7_IP4", "HLT_Mu8_IP6", "HLT_Mu8_IP5", "HLT_Mu8_IP3", "HLT_Mu8p5_IP3p5", "HLT_Mu9_IP6", "HLT_Mu9_IP5", "HLT_Mu9_IP4", "HLT_Mu10p5_IP3p5", "HLT_Mu12_IP6"]
 
 muonTrgSelector = cms.EDProducer("MuonTriggerSelector",
                                  muonCollection = cms.InputTag("slimmedMuons"), #same collection as in NanoAOD                                                           
@@ -17,6 +16,7 @@ muonTrgSelector = cms.EDProducer("MuonTriggerSelector",
                                  beamSpot = cms.InputTag("offlineBeamSpot"),
 
                                  # trigger muon matching conditions
+                                 #TODO keep these cuts? BPHNano: dR=0.3, and no dPt
                                  max_deltaR_trigger_matching = cms.double(0.05),
                                  max_deltaPtRel_trigger_matching = cms.double(0.1),
 
@@ -28,13 +28,10 @@ muonTrgSelector = cms.EDProducer("MuonTriggerSelector",
                                  max_deltaR_dsaToSlimmed_matching = cms.double(0.1),
                                  max_deltaPtRel_dsaToSlimmed_matching = cms.double(0.2),
                                  
-                                 # selection for the selected muon
-                                 selmu_ptMin = cms.double(1.), #TODO raise to 6.8?
-                                 #selmu_ptMin = cms.double(0.3),
-                                 selmu_absEtaMax = cms.double(2.3), #TODO lower to 1.55?
-                                 #selmu_absEtaMax = cms.double(2.8),
+                                 # selection for the selected and trigger muon
+                                 selmu_ptMin = cms.double(5.8),
+                                 selmu_absEtaMax = cms.double(1.55),
                                  HLTPaths=cms.vstring(Path),
-                                 #L1seeds=cms.vstring(Seed),
                              )
 #cuts minimun number in B both mu and e, min number of trg, dz muon, dz and dr track, 
 countTrgMuons = cms.EDFilter("PATCandViewCountFilter",
@@ -60,9 +57,9 @@ muonBParkTable = cms.EDProducer("SimpleCandidateFlatTableProducer",
         dsaToSlimmedMatching_deltaPtRel = Var("userFloat('dsaToSlimmedMatching_deltaPtRel')", float, doc="relative difference in pt between the dsa and matched slimmed muons"), 
         dsaToSlimmedMatching_deltadxyRel = Var("userFloat('dsaToSlimmedMatching_deltadxyRel')", float, doc="relative difference in dxy between the dsa and matched slimmed muons"), 
         dsaToSlimmedMatching_deltadzRel = Var("userFloat('dsaToSlimmedMatching_deltadzRel')", float, doc="relative difference in dz between the dsa and matched slimmed muons"), 
-        vx = Var("vx()", float, doc="x coordinate of vertex position, in cm", precision=6),
-        vy = Var("vy()", float, doc="y coordinate of vertex position, in cm", precision=6),
-        vz = Var("vz()", float, doc="z coordinate of vertex position, in cm", precision=6),
+        vx = Var("vx()", float, doc="x coordinate of vertex position, in cm"),
+        vy = Var("vy()", float, doc="y coordinate of vertex position, in cm"),
+        vz = Var("vz()", float, doc="z coordinate of vertex position, in cm"),
         ##ptErr = Var("bestTrack().ptError()", float, doc = "ptError of the muon track", precision=6),
         dz = Var("userFloat('dz')", float, doc="dz (with sign) wrt first PV, in cm", precision=10),
         ##dzErr = Var("userFloat('dzErr')", float, doc="dz uncertainty, in cm", precision=6),
@@ -160,15 +157,6 @@ muonBParkTable = cms.EDProducer("SimpleCandidateFlatTableProducer",
         fired_HLT_Mu9_IP4 = Var("userInt('HLT_Mu9_IP4')", int, doc="reco muon fired this trigger"),
         fired_HLT_Mu10p5_IP3p5 = Var("userInt('HLT_Mu10p5_IP3p5')", int, doc="reco muon fired this trigger"),
         fired_HLT_Mu12_IP6 = Var("userInt('HLT_Mu12_IP6')", int, doc="reco muon fired this trigger"),
-        fired_HLT_Mu8_v1 = Var("userInt('HLT_Mu8_v1')", int, doc="reco muon fired this trigger"),
-        fired_HLT_Mu8_v12 = Var("userInt('HLT_Mu8_v12')", int, doc="reco muon fired this trigger"),
-        fired_HLT_Mu7p5_Track7_Jpsi_v11 = Var("userInt('HLT_Mu7p5_Track7_Jpsi_v11')", int, doc="reco muon fired this trigger"),
-        fired_HLT_L2Mu23NoVtx_2Cha_v1 = Var("userInt('HLT_L2Mu23NoVtx_2Cha_v1')", int, doc="reco muon fired this trigger"),
-        fired_HLT_L2Mu23NoVtx_2Cha_CosmicSeed_v1 = Var("userInt('HLT_L2Mu23NoVtx_2Cha_CosmicSeed_v1')", int, doc="reco muon fired this trigger"),
-        fired_DST_DoubleMu1_noVtx_CaloScouting_v2 = Var("userInt('DST_DoubleMu1_noVtx_CaloScouting_v2')", int, doc="reco muon fired this trigger"),
-        fired_DST_DoubleMu3_noVtx_CaloScouting_v6 = Var("userInt('DST_DoubleMu3_noVtx_CaloScouting_v6')", int, doc="reco muon fired this trigger"),
-        fired_DST_DoubleMu3_noVtx_Mass10_PFScouting_v3 = Var("userInt('DST_DoubleMu3_noVtx_Mass10_PFScouting_v3')", int, doc="reco muon fired this trigger"),
-        fired_HLT_BTagMu_AK4DiJet40_Mu5_v13 = Var("userInt('HLT_BTagMu_AK4DiJet40_Mu5_v13')", int, doc="reco muon fired this trigger"),
         prescale_HLT_Mu7_IP4 = Var("userInt('HLT_Mu7_IP4_prescale')", int, doc="reco muon prescale this trigger"),
         prescale_HLT_Mu8_IP6 = Var("userInt('HLT_Mu8_IP6_prescale')", int, doc="reco muon prescale this trigger"),
         prescale_HLT_Mu8_IP5 = Var("userInt('HLT_Mu8_IP5_prescale')", int, doc="reco muon prescale this trigger"),
@@ -179,15 +167,6 @@ muonBParkTable = cms.EDProducer("SimpleCandidateFlatTableProducer",
         prescale_HLT_Mu9_IP4 = Var("userInt('HLT_Mu9_IP4_prescale')", int, doc="reco muon prescale this trigger"),
         prescale_HLT_Mu10p5_IP3p5 = Var("userInt('HLT_Mu10p5_IP3p5_prescale')", int, doc="reco muon prescale this trigger"),
         prescale_HLT_Mu12_IP6 = Var("userInt('HLT_Mu12_IP6_prescale')", int, doc="reco muon prescale this trigger"),
-        prescale_HLT_Mu8_v1 = Var("userInt('HLT_Mu8_v1_prescale')", int, doc="reco muon prescale this trigger"),
-        prescale_HLT_Mu8_v12 = Var("userInt('HLT_Mu8_v12_prescale')", int, doc="reco muon prescale this trigger"),
-        prescale_HLT_Mu7p5_Track7_Jpsi_v11 = Var("userInt('HLT_Mu7p5_Track7_Jpsi_v11_prescale')", int, doc="reco muon prescale this trigger"),
-        prescale_HLT_L2Mu23NoVtx_2Cha_v1 = Var("userInt('HLT_L2Mu23NoVtx_2Cha_v1_prescale')", int, doc="reco muon prescale this trigger"),
-        prescale_HLT_L2Mu23NoVtx_2Cha_CosmicSeed_v1 = Var("userInt('HLT_L2Mu23NoVtx_2Cha_CosmicSeed_v1_prescale')", int, doc="reco muon prescale this trigger"),
-        prescale_DST_DoubleMu1_noVtx_CaloScouting_v2 = Var("userInt('DST_DoubleMu1_noVtx_CaloScouting_v2_prescale')", int, doc="reco muon prescale this trigger"),
-        prescale_DST_DoubleMu3_noVtx_CaloScouting_v6 = Var("userInt('DST_DoubleMu3_noVtx_CaloScouting_v6_prescale')", int, doc="reco muon prescale this trigger"),
-        prescale_DST_DoubleMu3_noVtx_Mass10_PFScouting_v3 = Var("userInt('DST_DoubleMu3_noVtx_Mass10_PFScouting_v3_prescale')", int, doc="reco muon fired this trigger"),
-        prescale_HLT_BTagMu_AK4DiJet40_Mu5_v13 = Var("userInt('HLT_BTagMu_AK4DiJet40_Mu5_v13_prescale')", int, doc="reco muon prescale this trigger"),
     ),
 )
 
@@ -225,10 +204,10 @@ muonTriggerBParkTable = muonBParkTable.clone(
     name = cms.string("TriggerMuon"),
     doc  = cms.string("HLT Muons matched with reco muons"), #reco muon matched to triggering muon"),
     variables = cms.PSet(CandVars,
-        vx = Var("vx()",float,doc="x coordinate of vertex position, in cm",precision=6),
-        vy = Var("vy()",float,doc="y coordinate of vertex position, in cm",precision=6),
-        vz = Var("vz()",float,doc="z coordinate of vertex position, in cm",precision=6)####################,
-#       trgMuonIndex = Var("userInt('trgMuonIndex')", int,doc="index in trigger muon collection")
+        vx = Var("vx()",float,doc="x coordinate of vertex position, in cm"),
+        vy = Var("vy()",float,doc="y coordinate of vertex position, in cm"),
+        vz = Var("vz()",float,doc="z coordinate of vertex position, in cm"),
+        #trgMuonIndex = Var("userInt('trgMuonIndex')", int,doc="index in trigger muon collection"),
    )
 )
 
