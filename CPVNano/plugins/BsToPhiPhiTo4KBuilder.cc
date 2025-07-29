@@ -55,6 +55,9 @@ public:
     genParticles_ {consumes<reco::GenParticleCollection>(cfg.getParameter<edm::InputTag>("genParticles"))}, 
     isMC_ {cfg.getParameter<bool>("isMC")},
 
+    // vertices
+    vertexToken_(consumes<reco::VertexCollection> (cfg.getParameter<edm::InputTag>( "vertices" ))), 
+
     // beamspot
     beamspot_{consumes<reco::BeamSpot>(cfg.getParameter<edm::InputTag>("beamSpot"))}{ 
        produces<pat::CompositeCandidateCollection>();
@@ -92,6 +95,9 @@ private:
   const edm::EDGetTokenT<reco::GenParticleCollection> genParticles_;
   const bool isMC_;
 
+  // vertices
+  const edm::EDGetTokenT<reco::VertexCollection> vertexToken_;
+
   // beamspot
   const edm::EDGetTokenT<reco::BeamSpot> beamspot_;  
 };
@@ -114,6 +120,10 @@ void BsToPhiPhiTo4KBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSe
 
   edm::Handle<reco::GenParticleCollection> genParticles;
   evt.getByToken(genParticles_, genParticles);
+
+  edm::Handle<reco::VertexCollection> vertexHandle;
+  evt.getByToken(vertexToken_, vertexHandle);
+  const reco::Vertex & PV = vertexHandle->front();
 
   edm::Handle<reco::BeamSpot> beamspot;
   evt.getByToken(beamspot_, beamspot);  
@@ -236,9 +246,12 @@ void BsToPhiPhiTo4KBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSe
           )  
         );
 
-      Bs_cand.addUserFloat("Bs_vx", fitter_Bs.fitted_vtx().x());
-      Bs_cand.addUserFloat("Bs_vy", fitter_Bs.fitted_vtx().y());
-      Bs_cand.addUserFloat("Bs_vz", fitter_Bs.fitted_vtx().z());
+      float Bs_vx = fitter_Bs.fitted_vtx().x();
+      float Bs_vy = fitter_Bs.fitted_vtx().y();
+      float Bs_vz = fitter_Bs.fitted_vtx().z();
+      Bs_cand.addUserFloat("Bs_vx", Bs_vx);
+      Bs_cand.addUserFloat("Bs_vy", Bs_vy);
+      Bs_cand.addUserFloat("Bs_vz", Bs_vz);
 
       const auto& covMatrix = fitter_Bs.fitted_vtx_uncertainty();
       Bs_cand.addUserFloat("Bs_vtx_cxx", covMatrix.cxx());
@@ -256,7 +269,21 @@ void BsToPhiPhiTo4KBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSe
       //TODO add ct and time
 
       auto fit_p4 = fitter_Bs.fitted_p4();
-      Bs_cand.addUserFloat("Bs_fitted_pt"  , fit_p4.pt()); 
+
+      float Bs_fitted_pt = fit_p4.pt();
+      Bs_cand.addUserFloat("Bs_fitted_pt", Bs_fitted_pt); 
+      
+      // compute ptErr from error propagation
+      float Bs_fitted_px = fit_p4.px();
+      float Bs_fitted_py = fit_p4.py();
+      float var_px = fitter_Bs.fitted_candidate().kinematicParametersError().matrix()(3,3);
+      float var_py = fitter_Bs.fitted_candidate().kinematicParametersError().matrix()(4,4);
+      float cov_pxpy = fitter_Bs.fitted_candidate().kinematicParametersError().matrix()(3,4);
+      float Bs_fitted_ptErr = sqrt((Bs_fitted_px*Bs_fitted_px * var_px + Bs_fitted_py*Bs_fitted_py * var_py + 2*Bs_fitted_px*Bs_fitted_py*cov_pxpy) / (Bs_fitted_pt*Bs_fitted_pt)); 
+      Bs_cand.addUserFloat("Bs_fitted_px", Bs_fitted_px); 
+      Bs_cand.addUserFloat("Bs_fitted_py", Bs_fitted_py); 
+      Bs_cand.addUserFloat("Bs_fitted_ptErr", Bs_fitted_ptErr); 
+
       Bs_cand.addUserFloat("Bs_fitted_eta" , fit_p4.eta());
       Bs_cand.addUserFloat("Bs_fitted_phi" , fit_p4.phi());
       Bs_cand.addUserFloat("Bs_fitted_mass", fit_p4.mass());      
@@ -266,8 +293,21 @@ void BsToPhiPhiTo4KBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSe
       Bs_cand.addUserFloat("Bs_cos_theta_2D", cos_theta_2D(fitter_Bs, *beamspot, fit_p4));
       auto Bs_lxy = l_xy(fitter_Bs, *beamspot);
       Bs_cand.addUserFloat("Bs_lxy", Bs_lxy.value());
+      Bs_cand.addUserFloat("Bs_lxyErr", Bs_lxy.error());
       Bs_cand.addUserFloat("Bs_lxy_sig", Bs_lxy.value() / Bs_lxy.error());
 
+      auto Bs_lxy_corr = l_xy_corr(fitter_Bs, *beamspot, PV);
+      Bs_cand.addUserFloat("Bs_lxy_corr", Bs_lxy_corr.value());
+      Bs_cand.addUserFloat("Bs_lxyErr_corr", Bs_lxy_corr.error());
+      Bs_cand.addUserFloat("Bs_lxy_sig_corr", Bs_lxy_corr.value() / Bs_lxy_corr.error());
+
+      auto Bs_lxyz = l_xyz(fitter_Bs, *beamspot, PV);
+      Bs_cand.addUserFloat("Bs_lxyz", Bs_lxyz.value());
+      Bs_cand.addUserFloat("Bs_lxyzErr", Bs_lxyz.error());
+
+      auto Bs_lxyz_corr = l_xyz_corr(fitter_Bs, *beamspot, PV);
+      Bs_cand.addUserFloat("Bs_lxyz_corr", Bs_lxyz_corr.value());
+      Bs_cand.addUserFloat("Bs_lxyzErr_corr", Bs_lxyz_corr.error());
     
       auto k1_p4 = fitter_Bs.daughter_p4(0);
       auto k2_p4 = fitter_Bs.daughter_p4(1);
@@ -275,7 +315,6 @@ void BsToPhiPhiTo4KBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSe
       auto k4_p4 = fitter_Bs.daughter_p4(3);
       auto phi1_p4 = k1_p4 + k2_p4;
       auto phi2_p4 = k3_p4 + k4_p4;
-
 
       //TODO necessary to store this info, cannot be retrieved from PhiToKK collection?
       //TODO make sure that the index gymnastic with PhiToKK is sound
@@ -314,24 +353,9 @@ void BsToPhiPhiTo4KBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSe
       Bs_cand.addUserFloat("deltaR_max", dr_info.second);
 
 
-
-      // apply pots-fit selection on phi1 candidate
+      // apply pots-fit selection
       if(!post_vtx_selection_Bs_(Bs_cand)) continue; //TODO move to after definition of user floats?
 
-
-      // Beamspot Position
-      Bs_cand.addUserFloat("beamspot_x", beamspot->x0());
-      Bs_cand.addUserFloat("beamspot_y", beamspot->y0());
-      Bs_cand.addUserFloat("beamspot_z", beamspot->z0());
-
-      //TODO add lxyz and t
-      //  float hnl_lxyz = sqrt(pow(mu0_ptr->vx() - hnl_cand.vx(), 2) + pow(mu0_ptr->vy() - hnl_cand.vy(), 2) + pow(mu0_ptr->vz() - hnl_cand.vz(), 2));
-      //  b_cand.addUserFloat("hnl_l_xyz", hnl_lxyz);
-      //  b_cand.addUserFloat("hnl_ct", hnl_lxyz / (hnl_cand.p4().Beta() * hnl_cand.p4().Gamma()));
-      //auto beamspot_vertex 
-      //reco::Vertex
-      //GlobalPoint point_bs(beamspot->x0(), beamspot->y0(), beamspot->z0());
-      //Bs_cand.addUserFloat("Bs_lxyz", VertexDistance3D().distance(fitter_Bs.fitted_vtx(), point_bs);
 
       // compute invariant masses
       Bs_cand.addUserFloat("k1k3_mass", (k1_p4 + k3_p4).mass());
@@ -382,9 +406,47 @@ void BsToPhiPhiTo4KBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSe
       float cos_theta_star_phi2 = (1. / (beta * momentum_phi2_fitted_cm)) * (energy_phi2_fitted_lab / gamma - energy_phi2_fitted_cm);
 
       Bs_cand.addUserFloat("Bs_beta", beta);
+      Bs_cand.addUserFloat("Bs_gamma", gamma);
       Bs_cand.addUserFloat("cos_theta_star_phi1", cos_theta_star_phi1);
       Bs_cand.addUserFloat("cos_theta_star_phi2", cos_theta_star_phi2);
 
+      // beamspot position
+      float beamspot_x = beamspot->x0();
+      float beamspot_y = beamspot->y0();
+      float beamspot_z = beamspot->z0();
+      Bs_cand.addUserFloat("beamspot_x", beamspot_x);
+      Bs_cand.addUserFloat("beamspot_y", beamspot_y);
+      Bs_cand.addUserFloat("beamspot_z", beamspot_z);
+
+      // compute ct (transverse direction)
+      const float mass_Bs_PDG = 5.36691; // GeV 
+      float Lx = Bs_vx - beamspot_x;
+      float Ly = Bs_vy - beamspot_y;
+
+      GlobalPoint point = fitter_Bs.fitted_vtx();
+      auto bs_pos = (*beamspot).position(point.z());
+      float Lx_posz = point.x() - bs_pos.x();
+      float Ly_posz = point.y() - bs_pos.y();
+
+      auto bs_pvpos = (*beamspot).position(PV.z());
+      float Lx_pvpos = point.x() - bs_pvpos.x();
+      float Ly_pvpos = point.y() - bs_pvpos.y();
+
+      float ct_2D_cm = mass_Bs_PDG * (Lx * Bs_fitted_px + Ly * Bs_fitted_py) / (Bs_fitted_px * Bs_fitted_px + Bs_fitted_py * Bs_fitted_py);
+      float ct_2D_cm_posz = mass_Bs_PDG * (Lx_posz * Bs_fitted_px + Ly_posz * Bs_fitted_py) / (Bs_fitted_px * Bs_fitted_px + Bs_fitted_py * Bs_fitted_py);
+      float ct_2D_cm_pvpos = mass_Bs_PDG * (Lx_pvpos * Bs_fitted_px + Ly_pvpos * Bs_fitted_py) / (Bs_fitted_px * Bs_fitted_px + Bs_fitted_py * Bs_fitted_py);
+      float ct_3D_cm = Bs_lxy.value() / (beta * gamma);  // take lxy computed at zpos
+
+      Bs_cand.addUserFloat("Bs_lx", Lx);
+      Bs_cand.addUserFloat("Bs_ly", Ly);
+      Bs_cand.addUserFloat("Bs_lx_posz", Lx_posz);
+      Bs_cand.addUserFloat("Bs_ly_posz", Ly_posz);
+      Bs_cand.addUserFloat("Bs_lx_pvpos", Lx_pvpos);
+      Bs_cand.addUserFloat("Bs_ly_pvpos", Ly_pvpos);
+      Bs_cand.addUserFloat("Bs_ct_2D_cm", ct_2D_cm);
+      Bs_cand.addUserFloat("Bs_ct_2D_cm_posz", ct_2D_cm_posz);
+      Bs_cand.addUserFloat("Bs_ct_2D_cm_pvpos", ct_2D_cm_pvpos);
+      Bs_cand.addUserFloat("Bs_ct_3D_cm", ct_3D_cm);
        
       // gen-matching (for MC only)
       int isMatched = 0;
