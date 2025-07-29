@@ -66,6 +66,36 @@ inline Measurement1D l_xy(const FITTER& fitter, const reco::BeamSpot &bs) {
   return {delta.perp(), sqrt(err.rerr(delta))};
 }
 
+template<typename FITTER>
+inline Measurement1D l_xy_corr(const FITTER& fitter, const reco::BeamSpot &bs, const reco::Vertex &PV) {
+  if(!fitter.success()) return {-2, -2};
+  GlobalPoint point = fitter.fitted_vtx();
+  GlobalError err = fitter.fitted_vtx_uncertainty();
+  auto bs_pos = bs.position(PV.z());
+  GlobalPoint delta(point.x() - bs_pos.x(), point.y() - bs_pos.y(), 0.);  
+  return {delta.perp(), sqrt(err.rerr(delta))};
+}
+
+template<typename FITTER>
+inline Measurement1D l_xyz(const FITTER& fitter, const reco::BeamSpot &bs) {
+  if(!fitter.success()) return {-2, -2};
+  GlobalPoint point = fitter.fitted_vtx();
+  GlobalError err = fitter.fitted_vtx_uncertainty();
+  auto bs_pos = bs.position();
+  GlobalPoint delta(point.x() - bs_pos.x(), point.y() - bs_pos.y(), point.z() - bs_pos.z());  
+  return {delta.mag(), sqrt(err.rerr(delta))}; // definition of mag() https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookCommonDataTypes
+}
+
+template<typename FITTER>
+inline Measurement1D l_xyz_corr(const FITTER& fitter, const reco::BeamSpot &bs, const reco::Vertex &PV) {
+  if(!fitter.success()) return {-2, -2};
+  GlobalPoint point = fitter.fitted_vtx();
+  GlobalError err = fitter.fitted_vtx_uncertainty();
+  auto bs_pos = bs.position(PV.z());
+  GlobalPoint delta(point.x() - bs_pos.x(), point.y() - bs_pos.y(), point.z() - bs_pos.z());  
+  return {delta.mag(), sqrt(err.rerr(delta))}; // definition of mag() https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookCommonDataTypes
+}
+
 // See https://github.com/cms-sw/cmssw/blob/29f5fc15b34591745c5cd3c2c6eb9793aa6f371b/DataFormats/TrackReco/src/TrackBase.cc#L148
 inline double dxyError(const reco::TrackBase &tk, const reco::TrackBase::Point &vtx, const math::Error<3>::type &vertexCov) {
   // Gradient of TrackBase::dxy(const Point &myBeamSpot) with respect to track parameters. Using unrolled expressions to avoid calling for higher dimension matrices
