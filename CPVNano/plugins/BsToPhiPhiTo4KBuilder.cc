@@ -301,7 +301,7 @@ void BsToPhiPhiTo4KBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSe
       Bs_cand.addUserFloat("Bs_lxyErr_corr", Bs_lxy_corr.error());
       Bs_cand.addUserFloat("Bs_lxy_sig_corr", Bs_lxy_corr.value() / Bs_lxy_corr.error());
 
-      auto Bs_lxyz = l_xyz(fitter_Bs, *beamspot, PV);
+      auto Bs_lxyz = l_xyz(fitter_Bs, *beamspot);
       Bs_cand.addUserFloat("Bs_lxyz", Bs_lxyz.value());
       Bs_cand.addUserFloat("Bs_lxyzErr", Bs_lxyz.error());
 
