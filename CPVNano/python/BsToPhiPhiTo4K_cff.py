@@ -77,7 +77,7 @@ BsToPhiPhiTo4K = cms.EDProducer(
         'abs(userFloat("Bs_fitted_eta")) < 2.5',
         'userFloat("deltaR_min") < 0.15',
         'userFloat("deltaR_max") < 2.5', 
-        'userFloat("Bs_lxy_sig") > 1',
+        #'userFloat("Bs_lxy_sig") > 1',
         'userFloat("Bs_sv_prob") > 0.001', 
         'abs(userFloat("Bs_fitted_mass")-5.367)<0.3',
         ])
