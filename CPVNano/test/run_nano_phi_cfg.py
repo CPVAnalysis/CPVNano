@@ -19,7 +19,8 @@ options.register('addProbeTracksCollection', False           , VarParsing.multip
 options.register('skipDuplicated'          , True            , VarParsing.multiplicity.singleton, VarParsing.varType.bool  , "Skip duplicated events. True by default")
 options.register('globalTag'               ,'NOTSET'         , VarParsing.multiplicity.singleton, VarParsing.varType.string, "Set global tag"                         )
 options.register('wantSummary'             , True            , VarParsing.multiplicity.singleton, VarParsing.varType.bool  , "Run this on real data"                  )
-options.register('reportEvery'             , 1000            , VarParsing.multiplicity.singleton, VarParsing.varType.int   , "report every N events"                  )
+options.register('reportEvery'             , 1            , VarParsing.multiplicity.singleton, VarParsing.varType.int   , "report every N events"                  )
+#options.register('reportEvery'             , 1000            , VarParsing.multiplicity.singleton, VarParsing.varType.int   , "report every N events"                  )
 options.register('skip'                    ,  0              , VarParsing.multiplicity.singleton, VarParsing.varType.int   , "skip first N events"                    )
 options.register('inputFile'               , None            , VarParsing.multiplicity.singleton, VarParsing.varType.string, "inputFile name"                         )
 options.register('outFile'                 , 'bparknano.root', VarParsing.multiplicity.singleton, VarParsing.varType.string, "outputFile name"                        )
@@ -44,7 +45,8 @@ outputFileFEVT = cms.untracked.string('_'.join(['BParkFullEvt', extension[option
 
 if not options.inputFiles:
     options.inputFiles = ['/store/data/Run2018D/ParkingBPH1/MINIAOD/05May2019promptD-v1/270000/F85EA23D-7ACA-CC47-ABA5-3F0D8DFFE32E.root'] if not options.isMC else \
-                         ['file:%s' %i for i in glob('/afs/cern.ch/work/a/anlyon/CPVAnalysis/CPVGen/CMSSW_10_6_28/src/CPVGen/crab/production/test_RM/step_MINI.root')]
+                         ['file:%s' %i for i in glob('/eos/cms/store/group/phys_bphys/anlyon/CPVGen/102X_crab_trgmu_filter/BsToPhiPhiTo4K/crab_102X_crab_trgmu_filter_BsToPhiPhiTo4K_20250212_225911/250212_215924/0000/step4_*.root')]
+                         #['/store/mc/RunIII2024Summer24MiniAODv6/B0sToJPsiK0S-JPsiTo2Mu-K0STo2Pi_SVS_Fil-Jpsi-K0S_TuneCP5_13p6TeV_pythia8-evtgen/MINIAODSIM/150X_mcRun3_2024_realistic_v2-v2/2810000/fb6b835a-0552-4e43-b0dc-06be6a847693.root'] # this is a sin2b mc 2024 sample
                          #['file:%s' %i for i in glob('/eos/user/a/anlyon/CPVGen/102X_crab_trgmu_filter/BsToPhiPhiTo4K/crab_102X_crab_trgmu_filter_BsToPhiPhiTo4K_20250212_225911/250212_215924/0000/step4_509.root')]
 
 annotation = '%s nevts:%d' % (outputFileNANO, options.maxEvents)

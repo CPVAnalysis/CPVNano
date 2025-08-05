@@ -430,6 +430,8 @@ void MuonTriggerSelector::produce(edm::Event& iEvent, const edm::EventSetup& iSe
       ETHmuons_out->back().addUserFloat("DPT" ,muonDPT[iMuo]);
       ETHmuons_out->back().addUserInt("isDSAMuon", 0);
       ETHmuons_out->back().addUserInt("isSlimmedMuon", 1);
+
+      //TODO check that the variables are called at the correct point
       ETHmuons_out->back().addUserFloat("dz", slimmed_muon.dB(slimmed_muon.PVDZ));
       ETHmuons_out->back().addUserFloat("dzS", slimmed_muon.dB(slimmed_muon.PVDZ)/slimmed_muon.edB(slimmed_muon.PVDZ));
       ETHmuons_out->back().addUserFloat("dxy", slimmed_muon.dB(slimmed_muon.PV2D));
