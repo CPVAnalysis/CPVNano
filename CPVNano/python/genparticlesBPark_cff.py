@@ -1,31 +1,32 @@
 import FWCore.ParameterSet.Config as cms
-from  PhysicsTools.NanoAOD.genparticles_cff import finalGenParticles, genParticleTable
-from PhysicsTools.CPVNano.common_cff import Var
+from  PhysicsTools.NanoAOD.genparticles_cff import *
+from PhysicsTools.NanoAOD.simpleGenParticleFlatTableProducer_cfi import simpleGenParticleFlatTableProducer
 
 
-# for BPHPark start with merged particles (pruned + packed),
+# for BParkPark start with merged particles (pruned + packed),
 # where pruned contain K* states, but not final states, 
 # and packed contain final states (K pi).
 # then you save also final states (granddaughters)
 finalGenParticlesBPark = finalGenParticles.clone(
   src = cms.InputTag("mergedGenParticles"),
   select = cms.vstring(
-	"drop *",
+        "drop *",
+        "keep++ (abs(pdgId) == 511 || abs(pdgId) == 521 || abs(pdgId)==531)",  #keep all B0(=511) and B+/-(521) + their daughters and granddaughters
    )
 )
 
-genParticleBParkTable = genParticleTable.clone(
+genParticleBParkTable = simpleGenParticleFlatTableProducer.clone(
   src = cms.InputTag("finalGenParticlesBPark"),
+  name = cms.string("GenPart"),
+  doc = cms.string("interesting gen particles for BPark"),  
   variables = cms.PSet(
       genParticleTable.variables,
-      p = Var("p",  float, precision=8),
-      gamma = Var("p4().Gamma()",  float, precision=8),
-      beta  = Var("p4().Beta()",  float, precision=8),
-      vx = Var("vx()", float, doc="x coordinate of the production vertex position, in cm", precision=10),
-      vy = Var("vy()", float, doc="y coordinate of the production vertex position, in cm", precision=10),
-      vz = Var("vz()", float, doc="z coordinate of the production vertex position, in cm", precision=10),
+      vx = Var("vx", float, doc="x coordinate of the production vertex position, in cm", precision=12),
+      vy = Var("vy", float, doc="y coordinate of the production vertex position, in cm", precision=12),
+      vz = Var("vz", float, doc="z coordinate of the production vertex position, in cm", precision=12),
   )
 )
+
 
 genParticleBParkSequence = cms.Sequence(finalGenParticlesBPark)
 genParticleBParkTables = cms.Sequence(genParticleBParkTable)

@@ -23,7 +23,6 @@
 #include "DataFormats/PatCandidates/interface/Electron.h"
 #include "DataFormats/Common/interface/AssociationVector.h"
 
-#include "../interface/ETHMuon.h"
 #include "../interface/helper.h"
 
 class TrackMerger : public edm::global::EDProducer<> {
@@ -33,11 +32,12 @@ public:
 
   //would it be useful to give this a bit more standard structure?
   explicit TrackMerger(const edm::ParameterSet &cfg):
+    bFieldToken_(esConsumes<MagneticField, IdealMagneticFieldRecord>()),
     beamSpotSrc_(consumes<reco::BeamSpot>(cfg.getParameter<edm::InputTag>("beamSpot"))),
     tracksToken_(consumes<pat::PackedCandidateCollection>(cfg.getParameter<edm::InputTag>("tracks"))),
     lostTracksToken_(consumes<pat::PackedCandidateCollection>(cfg.getParameter<edm::InputTag>("lostTracks"))),
     trgMuonToken_(consumes<std::vector<pat::Muon>>(cfg.getParameter<edm::InputTag>("trgMuon"))),
-    muonToken_(consumes<std::vector<pat::ETHMuon>>(cfg.getParameter<edm::InputTag>("muons"))),
+    muonToken_(consumes<pat::MuonCollection>(cfg.getParameter<edm::InputTag>("muons"))),
     eleToken_(consumes<pat::ElectronCollection>(cfg.getParameter<edm::InputTag>("pfElectrons"))),
     vertexToken_(consumes<reco::VertexCollection> (cfg.getParameter<edm::InputTag>( "vertices" ))), 
     //lowptele_(consumes<pat::ElectronCollection>(cfg.getParameter<edm::InputTag>("lowPtElectrons"))),
@@ -67,11 +67,12 @@ public:
   
 
 private:
+  const edm::ESGetToken<MagneticField, IdealMagneticFieldRecord> bFieldToken_;
   const edm::EDGetTokenT<reco::BeamSpot> beamSpotSrc_;
   const edm::EDGetTokenT<pat::PackedCandidateCollection> tracksToken_;
   const edm::EDGetTokenT<pat::PackedCandidateCollection> lostTracksToken_;
   const edm::EDGetTokenT<std::vector<pat::Muon>> trgMuonToken_;
-  const edm::EDGetTokenT<std::vector<pat::ETHMuon>> muonToken_;
+  const edm::EDGetTokenT<std::vector<pat::Muon>> muonToken_;
   const edm::EDGetTokenT<pat::ElectronCollection> eleToken_;
   const edm::EDGetTokenT<reco::VertexCollection> vertexToken_;
   //const edm::EDGetTokenT<pat::ElectronCollection> lowptele_;
@@ -100,6 +101,8 @@ private:
 void TrackMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const &stp) const {
 
   //input
+  const auto &bField = stp.getData(bFieldToken_);
+
   edm::Handle<reco::BeamSpot> beamSpotHandle;
   evt.getByToken(beamSpotSrc_, beamSpotHandle);
   if ( ! beamSpotHandle.isValid() ) {
@@ -107,8 +110,6 @@ void TrackMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const 
   }  
   const reco::BeamSpot& beamSpot = *beamSpotHandle;
 
-  edm::ESHandle<MagneticField> bFieldHandle;
-  stp.get<IdealMagneticFieldRecord>().get(bFieldHandle);
   edm::Handle<pat::PackedCandidateCollection> tracks;
   evt.getByToken(tracksToken_, tracks);
   edm::Handle<pat::PackedCandidateCollection> lostTracks;
@@ -116,7 +117,7 @@ void TrackMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const 
   edm::Handle<std::vector<pat::Muon>> trgMuons;
   evt.getByToken(trgMuonToken_, trgMuons);
 
-  edm::Handle<std::vector<pat::ETHMuon>> muons;
+  edm::Handle<std::vector<pat::Muon>> muons;
   evt.getByToken(muonToken_, muons);
   edm::Handle<pat::ElectronCollection> pfele;
   evt.getByToken(eleToken_, pfele);
@@ -185,7 +186,7 @@ void TrackMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const 
 
     // high purity requirement applied only in packedCands
     if( do_trk_highpurity_ && iTrk < nTracks && !trk.trackHighPurity()) continue;
-    const reco::TransientTrack trackTT( (*trk.bestTrack()) , &(*bFieldHandle));
+    const reco::TransientTrack trackTT((*trk.bestTrack()), &bField);
 
     // distance closest approach in x,y wrt beam spot
     std::pair<double,double> DCA = computeDCA(trackTT, beamSpot);
@@ -214,11 +215,8 @@ void TrackMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const 
 
     // clean tracks wrt to all muons
     int matchedToMuon       = 0;
-    int matchedToLooseMuon  = 0;
-    int matchedToSoftMuon   = 0;
-    int matchedToMediumMuon = 0;
     if(do_mu_cleaning_){
-      for (const pat::ETHMuon &imutmp : *muons) {
+      for (const pat::Muon &imutmp : *muons) {
           for (unsigned int i = 0; i < imutmp.numberOfSourceCandidatePtrs(); ++i) {
               if (! ((imutmp.sourceCandidatePtr(i)).isNonnull() && 
                      (imutmp.sourceCandidatePtr(i)).isAvailable())
@@ -227,10 +225,6 @@ void TrackMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const 
               const edm::Ptr<reco::Candidate> & source = imutmp.sourceCandidatePtr(i);
               if (source.id() == tracks.id() && source.key() == iTrk){
                   matchedToMuon =1;
-                  if (imutmp.looseId()) matchedToLooseMuon  = 1;
-                  if (imutmp.softId())  matchedToSoftMuon   = 1;
-                  if (imutmp.mediumId()) matchedToMediumMuon = 1;
-                  // add is slimmed/ is dsa?
                   break;
               }
           }
@@ -304,9 +298,6 @@ void TrackMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const 
     pcand.addUserInt("highPurityFlag", trk.bestTrack()->quality(reco::TrackBase::highPurity)); 
     pcand.addUserFloat("validFraction", trk.bestTrack()->validFraction()); 
     pcand.addUserInt("isMatchedToMuon", matchedToMuon);
-    pcand.addUserInt("isMatchedToLooseMuon", matchedToLooseMuon);
-    pcand.addUserInt("isMatchedToSoftMuon", matchedToSoftMuon);
-    pcand.addUserInt("isMatchedToMediumMuon", matchedToMediumMuon);
     pcand.addUserInt("isMatchedToEle", matchedToEle);
     //pcand.addUserInt("isMatchedToLowPtEle", matchedToLowPtEle);
     pcand.addUserInt("nValidHits", trk.bestTrack()->found());

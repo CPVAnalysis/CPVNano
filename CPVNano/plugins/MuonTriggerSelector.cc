@@ -7,7 +7,7 @@
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
-#include "FWCore/Framework/interface/EDProducer.h"
+#include "FWCore/Framework/interface/stream/EDProducer.h"
 #include "FWCore/Utilities/interface/StreamID.h"
 #include "FWCore/Framework/interface/EventSetup.h"
 #include "FWCore/Framework/interface/ESHandle.h"
@@ -33,16 +33,14 @@
 
 #include "DataFormats/Math/interface/deltaR.h"
 
-#include "../interface/ETHMuon.h"
-
 #include <TLorentzVector.h>
 #include "../interface/helper.h"
 
 using namespace std;
 
-constexpr bool debug = false; //false;
+constexpr bool debug = false;
 
-class MuonTriggerSelector : public edm::EDProducer {
+class MuonTriggerSelector : public edm::stream::EDProducer<> {
 
   public:
 
@@ -54,6 +52,8 @@ class MuonTriggerSelector : public edm::EDProducer {
   private:
 
     virtual void produce(edm::Event&, const edm::EventSetup&);
+
+    const edm::ESGetToken<MagneticField, IdealMagneticFieldRecord> bFieldToken_;
 
     edm::EDGetTokenT<std::vector<pat::Muon>> muonSrc_;
     edm::EDGetTokenT<std::vector<reco::Track>> displacedStandaloneMuonSrc_;
@@ -86,6 +86,7 @@ class MuonTriggerSelector : public edm::EDProducer {
 
 
 MuonTriggerSelector::MuonTriggerSelector(const edm::ParameterSet &iConfig):
+  bFieldToken_(esConsumes<MagneticField, IdealMagneticFieldRecord>()),
   muonSrc_(consumes<std::vector<pat::Muon>> (iConfig.getParameter<edm::InputTag>("muonCollection"))),
   displacedStandaloneMuonSrc_(consumes<std::vector<reco::Track>> (iConfig.getParameter<edm::InputTag>("displacedStandaloneMuonCollection"))),
   vertexSrc_( consumes<reco::VertexCollection> (iConfig.getParameter<edm::InputTag>("vertexCollection"))),
@@ -111,17 +112,16 @@ MuonTriggerSelector::MuonTriggerSelector(const edm::ParameterSet &iConfig):
   // selected muons are slimmedMuons and displacedStandaloneMuons
   // make sure that the indices between the selected muons and transient tracks are consistent
   produces<pat::MuonCollection>("trgMuons"); 
-  produces<std::vector<pat::ETHMuon>>("SelectedMuons");
+  produces<pat::MuonCollection>("SelectedMuons");
   produces<TransientTrackCollection>("SelectedTransientMuons");  
 }
 
 
 void MuonTriggerSelector::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
-    edm::ESHandle<MagneticField> bFieldHandle;
-    iSetup.get<IdealMagneticFieldRecord>().get(bFieldHandle);
+    const auto &bField = iSetup.getData(bFieldToken_);
 
     std::unique_ptr<pat::MuonCollection>      trgmuons_out   ( new pat::MuonCollection );
-    std::unique_ptr<std::vector<pat::ETHMuon>> ETHmuons_out  ( new std::vector<pat::ETHMuon> );
+    std::unique_ptr<pat::MuonCollection> selmuons_out  ( new pat::MuonCollection );
     std::unique_ptr<TransientTrackCollection> trans_muons_out( new TransientTrackCollection );
     
     edm::Handle<std::vector<pat::Muon>> slimmed_muons;
@@ -202,7 +202,7 @@ void MuonTriggerSelector::produce(edm::Event& iEvent, const edm::EventSetup& iSe
         } */
 
         // for each muon, we study whether it fires a HLT line or not
-        for (const std::string path: HLTPaths_){
+        for (const std::string& path: HLTPaths_){
             if(debug) std::cout << path << " " << muon.triggerObjectMatches().size() << std::endl;
             ipath++;
 
@@ -290,7 +290,7 @@ void MuonTriggerSelector::produce(edm::Event& iEvent, const edm::EventSetup& iSe
               for (unsigned int i = 0, n = triggerBits->size(); i < n; ++i) {
                 //if(names.triggerName(i).find(HLTPaths_[path]) != std::string::npos || names.triggerName(i)==HLTPaths_[path]){
                 if(names.triggerName(i).find(HLTPaths_[path]) != std::string::npos){
-                  prescales[iMuo][path] = triggerPrescales->getPrescaleForIndex(i);
+                  prescales[iMuo][path] = triggerPrescales->getPrescaleForIndex<double>(i);
                 }
               }
             }
@@ -407,7 +407,7 @@ void MuonTriggerSelector::produce(edm::Event& iEvent, const edm::EventSetup& iSe
       if(fabs(slimmed_muon.eta())>selmu_absEtaMax_) continue;
       //std::cout << "after the kin selection" << std::endl;
 
-      const reco::TransientTrack muonTT((*(slimmed_muon.bestTrack())),&(*bFieldHandle)); //sara:check,why not using inner track for muons? GM: What is this and why do we need this???
+      const reco::TransientTrack muonTT((*(slimmed_muon.bestTrack())), &bField);
       if(!muonTT.isValid()) continue; // GM: and why do we skip this muon if muonTT is invalid? This seems to have no effect so I kept it.
       //std::cout << "after the muonTT selection" << std::endl;
 
@@ -417,25 +417,25 @@ void MuonTriggerSelector::produce(edm::Event& iEvent, const edm::EventSetup& iSe
       //std::cout << "slimmed muon " << iMuo << " pt " << slimmed_muon.pt()  << " eta " << slimmed_muon.eta() << std::endl;
       
       // muon collection
-      pat::ETHMuon the_muon(slimmed_muon);
-      ETHmuons_out->emplace_back(the_muon);
+      selmuons_out->emplace_back(slimmed_muon);
 
       for(unsigned int i=0; i<HLTPaths_.size(); i++){
-        ETHmuons_out->back().addUserInt(HLTPaths_[i], fires[iMuo][i]);
-        ETHmuons_out->back().addUserInt(HLTPaths_[i] + "_prescale", prescales[iMuo][i]);
+        selmuons_out->back().addUserInt(HLTPaths_[i], fires[iMuo][i]);
+        selmuons_out->back().addUserInt(HLTPaths_[i] + "_prescale", prescales[iMuo][i]);
       }
-      ETHmuons_out->back().addUserInt("isTriggering", muonIsTrigger[iMuo]);
-      ETHmuons_out->back().addUserInt("isTriggeringBPark", muonIsTriggerBPark[iMuo]);
-      ETHmuons_out->back().addUserFloat("DR", muonDR[iMuo]);
-      ETHmuons_out->back().addUserFloat("DPT" ,muonDPT[iMuo]);
-      ETHmuons_out->back().addUserInt("isDSAMuon", 0);
-      ETHmuons_out->back().addUserInt("isSlimmedMuon", 1);
+      selmuons_out->back().addUserInt("isTriggering", muonIsTrigger[iMuo]);
+      selmuons_out->back().addUserInt("isTriggeringBPark", muonIsTriggerBPark[iMuo]);
+      selmuons_out->back().addUserFloat("DR", muonDR[iMuo]);
+      selmuons_out->back().addUserFloat("DPT" ,muonDPT[iMuo]);
+      selmuons_out->back().addUserInt("isDSAMuon", 0);
+      selmuons_out->back().addUserInt("isSlimmedMuon", 1);
 
       //TODO check that the variables are called at the correct point
-      ETHmuons_out->back().addUserFloat("dz", slimmed_muon.dB(slimmed_muon.PVDZ));
-      ETHmuons_out->back().addUserFloat("dzS", slimmed_muon.dB(slimmed_muon.PVDZ)/slimmed_muon.edB(slimmed_muon.PVDZ));
-      ETHmuons_out->back().addUserFloat("dxy", slimmed_muon.dB(slimmed_muon.PV2D));
-      ETHmuons_out->back().addUserFloat("dxyS", slimmed_muon.dB(slimmed_muon.PV2D)/slimmed_muon.edB(slimmed_muon.PV2D));
+      //TODO add further variables
+      selmuons_out->back().addUserFloat("dz", slimmed_muon.dB(slimmed_muon.PVDZ));
+      selmuons_out->back().addUserFloat("dzS", slimmed_muon.dB(slimmed_muon.PVDZ)/slimmed_muon.edB(slimmed_muon.PVDZ));
+      selmuons_out->back().addUserFloat("dxy", slimmed_muon.dB(slimmed_muon.PV2D));
+      selmuons_out->back().addUserFloat("dxyS", slimmed_muon.dB(slimmed_muon.PV2D)/slimmed_muon.edB(slimmed_muon.PV2D));
 
       // check if at least one triggering muon in the event
       //if(muonIsTriggerBPark[iMuo]){
@@ -454,9 +454,9 @@ void MuonTriggerSelector::produce(edm::Event& iEvent, const edm::EventSetup& iSe
         dxyS_BS_alaRdst = tk->dxy(beamSpot) / dxyError(*tk, beamSpot.position(), beamSpot.rotatedCovariance3D());
       }
 
-      ETHmuons_out->back().addUserFloat("dz_alaRdst", dz_alaRdst);
-      ETHmuons_out->back().addUserFloat("dxy_BS_alaRdst", dxy_BS_alaRdst);
-      ETHmuons_out->back().addUserFloat("dxyS_BS_alaRdst", dxyS_BS_alaRdst);
+      selmuons_out->back().addUserFloat("dz_alaRdst", dz_alaRdst);
+      selmuons_out->back().addUserFloat("dxy_BS_alaRdst", dxy_BS_alaRdst);
+      selmuons_out->back().addUserFloat("dxyS_BS_alaRdst", dxyS_BS_alaRdst);
 
       // then, by accounting for that the axis of the beamspot can be shifted
       // get the vertex the closest in dz to the muon
@@ -483,21 +483,22 @@ void MuonTriggerSelector::produce(edm::Event& iEvent, const edm::EventSetup& iSe
         mu_dxyS_BS = slimmed_muon.bestTrack()->dxy(the_BS.position()) / dxyError(*slimmed_muon.bestTrack(), the_BS.position(), the_BS.error());
       }
 
-      ETHmuons_out->back().addUserFloat("dxy_BS", mu_dxy_BS);
-      ETHmuons_out->back().addUserFloat("dxyS_BS", mu_dxyS_BS);
+      selmuons_out->back().addUserFloat("dxy_BS", mu_dxy_BS);
+      selmuons_out->back().addUserFloat("dxyS_BS", mu_dxyS_BS);
 
-      ETHmuons_out->back().addUserInt("isMatchedToSlimmedMuon", -99);
-      ETHmuons_out->back().addUserInt("indexMatchedSlimmedMuon", -99);
-      ETHmuons_out->back().addUserFloat("dsaToSlimmedMatching_deltaPtRel", -99.);
-      ETHmuons_out->back().addUserFloat("dsaToSlimmedMatching_deltaR", -99.);
-      ETHmuons_out->back().addUserFloat("dsaToSlimmedMatching_deltadxyRel", -99.);
-      ETHmuons_out->back().addUserFloat("dsaToSlimmedMatching_deltadzRel", -99.);
-      ETHmuons_out->back().addUserInt("passDSAMuonID", -99);
+      selmuons_out->back().addUserInt("isMatchedToSlimmedMuon", -99);
+      selmuons_out->back().addUserInt("indexMatchedSlimmedMuon", -99);
+      selmuons_out->back().addUserFloat("dsaToSlimmedMatching_deltaPtRel", -99.);
+      selmuons_out->back().addUserFloat("dsaToSlimmedMatching_deltaR", -99.);
+      selmuons_out->back().addUserFloat("dsaToSlimmedMatching_deltadxyRel", -99.);
+      selmuons_out->back().addUserFloat("dsaToSlimmedMatching_deltadzRel", -99.);
+      selmuons_out->back().addUserInt("passDSAMuonID", -99);
     }
 
     //std::cout << "at least one triggering muon: " << at_least_one_triggering_muon << std::endl;
 
     // add the displaced standalone muons to the collection
+    /*
     if(add_dsa_){
       for(const reco::Track & dsa_muon : *displaced_standalone_muons){
         //unsigned int iDSAMuon(&dsa_muon - &(displaced_standalone_muons->at(0)));
@@ -506,27 +507,26 @@ void MuonTriggerSelector::produce(edm::Event& iEvent, const edm::EventSetup& iSe
 
         // add the muon to the transient track collection
         // one has to make sure that the indices in the muon and transient track collections match
-        const reco::TransientTrack muonTT((*(&dsa_muon)),&(*bFieldHandle)); 
+        const reco::TransientTrack muonTT((*(&dsa_muon)), &bField); 
         if(!muonTT.isValid()) continue; 
         trans_muons_out->emplace_back(muonTT);
 
-        pat::ETHMuon the_muon(dsa_muon);
-        ETHmuons_out->emplace_back(the_muon);
+        selmuons_out->emplace_back(dsa_muon);
 
         for(unsigned int i=0; i<HLTPaths_.size(); i++){
-          ETHmuons_out->back().addUserInt(HLTPaths_[i], -1);
-          ETHmuons_out->back().addUserInt(HLTPaths_[i] + "_prescale", -1);
+          selmuons_out->back().addUserInt(HLTPaths_[i], -1);
+          selmuons_out->back().addUserInt(HLTPaths_[i] + "_prescale", -1);
         }
-        ETHmuons_out->back().addUserInt("isTriggering", -1);
-        ETHmuons_out->back().addUserInt("isTriggeringBPark", -1);
-        ETHmuons_out->back().addUserFloat("DR", -1.);
-        ETHmuons_out->back().addUserFloat("DPT", -1.);
-        ETHmuons_out->back().addUserInt("isDSAMuon", 1);
-        ETHmuons_out->back().addUserInt("isSlimmedMuon", 0);
-        ETHmuons_out->back().addUserFloat("dz", dsa_muon.dz(PV.position()));
-        ETHmuons_out->back().addUserFloat("dzS", dsa_muon.dz(PV.position())/dsa_muon.dzError());
-        ETHmuons_out->back().addUserFloat("dxy", dsa_muon.dxy(PV.position()));
-        ETHmuons_out->back().addUserFloat("dxyS", dsa_muon.dxy(PV.position())/dsa_muon.dxyError());
+        selmuons_out->back().addUserInt("isTriggering", -1);
+        selmuons_out->back().addUserInt("isTriggeringBPark", -1);
+        selmuons_out->back().addUserFloat("DR", -1.);
+        selmuons_out->back().addUserFloat("DPT", -1.);
+        selmuons_out->back().addUserInt("isDSAMuon", 1);
+        selmuons_out->back().addUserInt("isSlimmedMuon", 0);
+        selmuons_out->back().addUserFloat("dz", dsa_muon.dz(PV.position()));
+        selmuons_out->back().addUserFloat("dzS", dsa_muon.dz(PV.position())/dsa_muon.dzError());
+        selmuons_out->back().addUserFloat("dxy", dsa_muon.dxy(PV.position()));
+        selmuons_out->back().addUserFloat("dxyS", dsa_muon.dxy(PV.position())/dsa_muon.dxyError());
 
         //std::cout << "DSA muon " << iDSAMuon << " pt " << dsa_muon.pt()  << " eta " << dsa_muon.eta() << std::endl;
 
@@ -547,7 +547,7 @@ void MuonTriggerSelector::produce(edm::Event& iEvent, const edm::EventSetup& iSe
             // for each slimmed  muon, apply same selection as above, to make sure that the indices are consistent
             if(slimmed_muon.pt()<selmu_ptMin_) continue;
             if(fabs(slimmed_muon.eta())>selmu_absEtaMax_) continue;
-            const reco::TransientTrack muonTT((*(slimmed_muon.bestTrack())),&(*bFieldHandle));
+            const reco::TransientTrack muonTT((*(slimmed_muon.bestTrack())),&bField);
             if(!muonTT.isValid()) continue;
 
             unsigned int iSlimmedMuon(&slimmed_muon - &(slimmed_muons->at(0)));
@@ -581,12 +581,12 @@ void MuonTriggerSelector::produce(edm::Event& iEvent, const edm::EventSetup& iSe
           }
         }
 
-        ETHmuons_out->back().addUserInt("isMatchedToSlimmedMuon", isMatchedToSlimmedMuon);
-        ETHmuons_out->back().addUserInt("indexMatchedSlimmedMuon", indexMatchedSlimmedMuon);
-        ETHmuons_out->back().addUserFloat("dsaToSlimmedMatching_deltaPtRel", dsaToSlimmedMatching_deltaPtRel);
-        ETHmuons_out->back().addUserFloat("dsaToSlimmedMatching_deltaR", dsaToSlimmedMatching_deltaR);
-        ETHmuons_out->back().addUserFloat("dsaToSlimmedMatching_deltadxyRel", dsaToSlimmedMatching_deltadxyRel);
-        ETHmuons_out->back().addUserFloat("dsaToSlimmedMatching_deltadzRel", dsaToSlimmedMatching_deltadzRel);
+        selmuons_out->back().addUserInt("isMatchedToSlimmedMuon", isMatchedToSlimmedMuon);
+        selmuons_out->back().addUserInt("indexMatchedSlimmedMuon", indexMatchedSlimmedMuon);
+        selmuons_out->back().addUserFloat("dsaToSlimmedMatching_deltaPtRel", dsaToSlimmedMatching_deltaPtRel);
+        selmuons_out->back().addUserFloat("dsaToSlimmedMatching_deltaR", dsaToSlimmedMatching_deltaR);
+        selmuons_out->back().addUserFloat("dsaToSlimmedMatching_deltadxyRel", dsaToSlimmedMatching_deltadxyRel);
+        selmuons_out->back().addUserFloat("dsaToSlimmedMatching_deltadzRel", dsaToSlimmedMatching_deltadzRel);
 
         // building DSA muon ID
         bool passDSAMuonID = false;
@@ -601,14 +601,15 @@ void MuonTriggerSelector::produce(edm::Event& iEvent, const edm::EventSetup& iSe
           ){
           passDSAMuonID = true;
         }
-        ETHmuons_out->back().addUserInt("passDSAMuonID", passDSAMuonID);
+        selmuons_out->back().addUserInt("passDSAMuonID", passDSAMuonID);
       }
     }
+    */
 
     //std::cout << std::endl;
 
     iEvent.put(std::move(trgmuons_out), "trgMuons"); 
-    iEvent.put(std::move(ETHmuons_out), "SelectedMuons");
+    iEvent.put(std::move(selmuons_out), "SelectedMuons");
     iEvent.put(std::move(trans_muons_out), "SelectedTransientMuons");
 }
 

@@ -138,7 +138,6 @@ process = nanoAOD_customizeBsToPhiPhiTo4K        (process, isMC=options.isMC)
 #process = nanoAOD_customizeBToKMuMu              (process, isMC=options.isMC) 
 #process = nanoAOD_customizeHNLToMuPi             (process, isMC=options.isMC)
 #process = nanoAOD_customizeTagAndProbeJPsiToMuMu (process, isMC=options.isMC) 
-process = nanoAOD_customizeTriggerBitsBPark      (process)
 
 # Path and EndPath definitions
 process.nanoAOD_general_step = cms.Path(process.nanoSequence)

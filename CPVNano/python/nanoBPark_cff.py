@@ -5,14 +5,13 @@ from PhysicsTools.NanoAOD.globals_cff import *
 from PhysicsTools.NanoAOD.nano_cff import *
 from PhysicsTools.NanoAOD.vertices_cff import *
 from PhysicsTools.NanoAOD.NanoAODEDMEventContent_cff import *
-from PhysicsTools.CPVNano.trgbits_cff import *
 
 
 
 ##for gen and trigger muon
 from PhysicsTools.CPVNano.genparticlesBPark_cff import finalGenParticlesBPark, genParticleBParkTable, genParticleBParkSequence, genParticleBParkTables
 from PhysicsTools.CPVNano.particlelevelBPark_cff import *
-from PhysicsTools.CPVNano.triggerObjectsBPark_cff import *
+from PhysicsTools.CPVNano.primaryverticesBPark_cff import *
 from PhysicsTools.CPVNano.muonsBPark_cff import * 
 
 ## filtered input collections
@@ -21,17 +20,28 @@ from PhysicsTools.CPVNano.tracksBPark_cff import *
 ## B collections
 from PhysicsTools.CPVNano.BsToPhiPhiTo4K_cff import *
 
-nanoSequenceOnlyFullSim = cms.Sequence(triggerObjectBParkTables + l1bits)
+
+vertexTable.svSrc = cms.InputTag("slimmedSecondaryVertices")
 
 nanoSequence = cms.Sequence(nanoMetadata + 
-                            vertexSequence +           
-                            globalTables + vertexTables + 
-                            triggerObjectBParkTables + l1bits)
+                            cms.Sequence(vertexTask) +
+                            cms.Sequence(globalTablesTask)+ 
+                            cms.Sequence(vertexTablesTask) +
+                            cms.Sequence(pVertexTable) 
+                           )
 
-nanoSequenceMC = cms.Sequence(particleLevelBParkSequence + genParticleBParkSequence + 
-                              globalTablesMC + genWeightsTable + genParticleBParkTables + lheInfoTable) 
+nanoSequenceMC = cms.Sequence(particleLevelBParkSequence + 
+                              genParticleBParkSequence + 
+                              #globalTablesMC + 
+                              genWeightsTable + 
+                              genParticleBParkTables + 
+                              lheInfoTable
+                             ) 
 
-
+# from BPHNano
+#def nanoAOD_customizeMC(process):
+#    process.nanoSequence = cms.Sequence(process.nanoSequence +particleLevelBPHSequence + genParticleBPHSequence+ genParticleBPHTables )
+#    return process
 
 def nanoAOD_customizeMuonTriggerBPark(process, addTriggerMuonCollection=False):
     if addTriggerMuonCollection:
@@ -45,10 +55,6 @@ def nanoAOD_customizeTrackFilteredBPark(process, addProbeTracksCollection=False)
       process.nanoSequence = cms.Sequence( process.nanoSequence + tracksBParkSequence + tracksBParkTables)
     else:
       process.nanoSequence = cms.Sequence( process.nanoSequence + tracksBParkSequence)
-    return process
-
-def nanoAOD_customizeTriggerBitsBPark(process):
-    process.nanoSequence = cms.Sequence( process.nanoSequence + trgTables)
     return process
 
 def nanoAOD_customizeBsToPhiPhiTo4K(process, isMC=False):

@@ -115,7 +115,7 @@ inline GlobalPoint FlightDistVector (const reco::BeamSpot & bm, GlobalPoint Bvtx
    GlobalPoint Dispbeamspot(-1*( (bm.x0()-Bvtx.x()) + (Bvtx.z()-bm.z0()) * bm.dxdz()),
 			   -1*( (bm.y0()-Bvtx.y()) + (Bvtx.z()-bm.z0()) * bm.dydz()), 
                             0);                    
-   return std::move(Dispbeamspot);
+   return Dispbeamspot;
 }
 
 
