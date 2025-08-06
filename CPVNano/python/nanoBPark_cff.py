@@ -11,7 +11,6 @@ from PhysicsTools.NanoAOD.NanoAODEDMEventContent_cff import *
 ##for gen and trigger muon
 from PhysicsTools.CPVNano.genparticlesBPark_cff import finalGenParticlesBPark, genParticleBParkTable, genParticleBParkSequence, genParticleBParkTables
 from PhysicsTools.CPVNano.particlelevelBPark_cff import *
-from PhysicsTools.CPVNano.primaryverticesBPark_cff import *
 from PhysicsTools.CPVNano.muonsBPark_cff import * 
 
 ## filtered input collections
@@ -26,8 +25,7 @@ vertexTable.svSrc = cms.InputTag("slimmedSecondaryVertices")
 nanoSequence = cms.Sequence(nanoMetadata + 
                             cms.Sequence(vertexTask) +
                             cms.Sequence(globalTablesTask)+ 
-                            cms.Sequence(vertexTablesTask) +
-                            cms.Sequence(pVertexTable) 
+                            cms.Sequence(vertexTablesTask)
                            )
 
 nanoSequenceMC = cms.Sequence(particleLevelBParkSequence + 
