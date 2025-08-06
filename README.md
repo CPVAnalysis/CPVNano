@@ -5,26 +5,26 @@
 Setup the environment
 
 ```
-cmssw-el7
-cmsrel CMSSW_10_2_15
-cd CMSSW_10_2_15/src
+cmsrel CMSSW_15_0_10
+cd CMSSW_15_0_10/src
 cmsenv
 git cms-init
 ```
 
-Add the NanoAOD tool
+Add the CPVNano framework
 
 ```
 git clone git@github.com:CPVAnalysis/CPVNano.git ./PhysicsTools
 ```
 
-Import custom CMSSW modifications
+Add the NanoAOD CMSSW package
 
 ```
-git cms-merge-topic -u amlyon:BHNLNano
+git cms-addpkg PhysicsTools/NanoAOD
 ```
 
 Build everything
+
 ```
 scram b -j 8
 ```
@@ -32,8 +32,7 @@ scram b -j 8
 ## After first installation
 
 ```
-cd CMSSW_10_2_15/src/PhysicsTools/CPVNano
-source create_singularity.sh
+cd CMSSW_15_0_10/src/PhysicsTools/CPVNano
 source setup.sh
 ```
 
