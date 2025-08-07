@@ -580,29 +580,35 @@ void BsToPhiPhiTo4KBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSe
           edm::Ptr<reco::GenParticle> genKaon4GrandMother_ptr(genParticles, genKaon4GrandMother_genIdx);
 
           // pdgId of the grandmother particles
-          genKaon1GrandMother_genPdgId = genKaon1GrandMother_ptr->pdgId();
-          genKaon2GrandMother_genPdgId = genKaon2GrandMother_ptr->pdgId();
-          genKaon3GrandMother_genPdgId = genKaon3GrandMother_ptr->pdgId();
-          genKaon4GrandMother_genPdgId = genKaon4GrandMother_ptr->pdgId();
+          if(genKaon1GrandMother_genIdx != -1) genKaon1GrandMother_genPdgId = genKaon1GrandMother_ptr->pdgId();
+          if(genKaon2GrandMother_genIdx != -1) genKaon2GrandMother_genPdgId = genKaon2GrandMother_ptr->pdgId();
+          if(genKaon3GrandMother_genIdx != -1) genKaon3GrandMother_genPdgId = genKaon3GrandMother_ptr->pdgId();
+          if(genKaon4GrandMother_genIdx != -1) genKaon4GrandMother_genPdgId = genKaon4GrandMother_ptr->pdgId();
 
           // get the grand-grandmother particle (for ct computation)
-          if(genKaon1GrandMother_ptr->numberOfMothers()>0) genKaon1GrandGrandMother_genIdx = genKaon1GrandMother_ptr->motherRef(0).key();
-          edm::Ptr<reco::GenParticle> genKaon1GrandGrandMother_ptr(genParticles, genKaon1GrandGrandMother_genIdx);
+          if(genKaon1GrandMother_genIdx != -1){
+            if(genKaon1GrandMother_ptr->numberOfMothers()>0) genKaon1GrandGrandMother_genIdx = genKaon1GrandMother_ptr->motherRef(0).key();
+          }
 
           // compute ct
+          bool compute_ct = true;
           float gen_Bs_px = genKaon1GrandMother_ptr->px(); 
           float gen_Bs_py = genKaon1GrandMother_ptr->py(); 
 
           // take PV as vertex of Bs meson or its mother
-          float gen_pv_x = -1.;
-          float gen_pv_y = -1.;
+          float gen_pv_x = -99.;
+          float gen_pv_y = -99.;
           if(genKaon1GrandGrandMother_genIdx != -1){
+            edm::Ptr<reco::GenParticle> genKaon1GrandGrandMother_ptr(genParticles, genKaon1GrandGrandMother_genIdx);
             gen_pv_x = genKaon1GrandGrandMother_ptr->vx();
             gen_pv_y = genKaon1GrandGrandMother_ptr->vy();
           }
-          else{
+          else if(genKaon1GrandMother_genIdx != -1){
             gen_pv_x = genKaon1GrandMother_ptr->vx();
             gen_pv_y = genKaon1GrandMother_ptr->vy();
+          }
+          else{
+            compute_ct = false;
           }
 
           // take SV as phi meson vertex
@@ -612,7 +618,7 @@ void BsToPhiPhiTo4KBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSe
           float gen_Lx = gen_sv_x - gen_pv_x;
           float gen_Ly = gen_sv_y - gen_pv_y;
 
-          gen_Bs_ct = mass_Bs_PDG * (gen_Lx * gen_Bs_px + gen_Ly * gen_Bs_py) / (gen_Bs_px * gen_Bs_px + gen_Bs_py * gen_Bs_py);
+          if(compute_ct) gen_Bs_ct = mass_Bs_PDG * (gen_Lx * gen_Bs_px + gen_Ly * gen_Bs_py) / (gen_Bs_px * gen_Bs_px + gen_Bs_py * gen_Bs_py);
 
           //std::cout << "k1: " << k1_genPdgId << " mother: " << genKaon1Mother_genPdgId << " grandmother: " << genKaon1GrandMother_genPdgId << std::endl;
 
