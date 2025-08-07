@@ -1,6 +1,7 @@
 import os
 import sys
 sys.path.append('../data/samples')
+from glob import glob
 from bparkingdata_samples_2018 import bpark_samples_2018
 from bparkingdata_samples_2022 import bpark_samples_2022
 from bparkingdata_samples_2024 import bpark_samples_2024
@@ -13,6 +14,7 @@ def getOptions():
   parser.add_argument('--ds'      , type=str, dest='ds'          , help='[optional | data/mccentral] run on specify data set. e.g "--ds D1"'                  , default=None)
   parser.add_argument('--year'    , type=str, dest='year'        , help='year to process in data'                                                             , default=None)
   parser.add_argument('--data'              , dest='data'        , help='run the nano tool on a data sample'                             , action='store_true', default=False)
+  parser.add_argument('--mcprivate'         , dest='mcprivate'   , help='run the BParking nano tool on a private MC sample'              , action='store_true', default=False)
   return parser.parse_args()
   
 
@@ -27,15 +29,14 @@ class NanoLauncher(object):
     self.year      = vars(opt)['year']
     self.ds        = vars(opt)['ds']
     self.data      = vars(opt)['data']
+    self.mcprivate = vars(opt)['mcprivate']
 
-    self.do_all = False
-    if self.data and self.ds == None:
-      self.do_all = True
+    self.user = os.environ["USER"]
+
+    if self.year not in ['2018', '2022', '2024']:
+      raise RuntimeError("Wrong year '{}'. Please choose amongst ['2018', '2022', '2024']'".format(self.year))
 
     if self.data:
-      if self.year not in ['2018', '2022', '2024']:
-        raise RuntimeError("Wrong year '{}'. Please choose amongst ['2018', '2022', '2024']'".format(self.year))
-
       if self.year == '2018':
         self.bpark_samples = bpark_samples_2018
       elif self.year == '2022':
@@ -45,15 +46,20 @@ class NanoLauncher(object):
 
       if self.ds == None:
         self.keys = self.bpark_samples.keys()
-
       else: # process a specific data set
         if self.ds not in self.bpark_samples.keys():
           raise RuntimeError('Please indicate on which period of the BParking dataset you want to run. Label "{}" not recognised. Choose among {}'.format(self.ds, self.bpark_samples.keys()))
-
         self.keys = [self.ds]
 
 
-  def prepare_nano_config(self):
+  def get_chunk_id(self, chunk):
+      idx = chunk.rfind('/')
+      chunk_id = int(chunk[idx+1:len(chunk)])
+
+      return chunk_id
+
+
+  def prepare_nano_config(self, chunk=None):
     doSignal = 'True' 
     doGeneral = 'False'
     addTriggerMuonCollection = 'True'
@@ -68,8 +74,18 @@ class NanoLauncher(object):
       else:
         raise RuntimeError('Please insert GT, json and era for year {}'.format(self.year))
 
+    elif self.mcprivate:
+      isMC = 'True'
+      if self.year == '2018':
+        json_file = ''
+        gt = '102X_upgrade2018_realistic_v15'
+        era = 'Run2_2018'
+      else:
+        raise RuntimeError('Please insert GT, json and era for year {}'.format(self.year))
+
     config = [
       "import FWCore.ParameterSet.Config as cms",
+      "from glob import glob",
       "",
       "isMC = {}".format(isMC),
       "globaltag = '{}'".format(gt),
@@ -80,6 +96,8 @@ class NanoLauncher(object):
       "addProbeTracksCollection = cms.untracked.bool({})".format(addProbeTracksCollection),
       "reportEvery = 1000",
       "",
+      "if isMC:",
+      "   inputFiles = ['file:%s' %i for i in glob('{}/step4_*.root')]".format(chunk),
       "from Configuration.StandardSequences.Eras import eras",
       "process = cms.Process('BParkNANO',eras.{})".format(era),
       "",
@@ -100,7 +118,7 @@ class NanoLauncher(object):
       "",
       "process.source = cms.Source(",
       "    'PoolSource',",
-      "    fileNames = cms.untracked.vstring(),",
+      "    fileNames = cms.untracked.vstring() if not isMC else cms.untracked.vstring(inputFiles),",
       "    secondaryFileNames = cms.untracked.vstring(),",
       "    skipEvents=cms.untracked.uint32(0),",
       "    duplicateCheckMode = cms.untracked.string('checkEachFile'),",
@@ -156,7 +174,6 @@ class NanoLauncher(object):
       "process = nanoAOD_customizeMuonTriggerBPark      (process, addTriggerMuonCollection=addTriggerMuonCollection)",
       "process = nanoAOD_customizeTrackFilteredBPark    (process, addProbeTracksCollection=addProbeTracksCollection)",
       "process = nanoAOD_customizeBsToPhiPhiTo4K        (process, isMC=isMC)",
-      "process = nanoAOD_customizeTriggerBitsBPark      (process)",
       "",
       "process.nanoAOD_general_step = cms.Path(process.nanoSequence)",
       "process.nanoAOD_BsToPhiPhiTo4K_step = cms.Path(process.nanoSequence + process.nanoBsToPhiPhiTo4KSequence + CountBsToPhiPhiTo4K)",
@@ -283,7 +300,44 @@ class NanoLauncher(object):
     print('\t--> the_crab_config.py created')
 
 
-  def submit(self):
+  def prepare_submitter(self, chunk_id):
+    submitter = [
+      '#!/bin/bash',
+      'workdir="/tmp/{}/{}_{}/"'.format(self.user, self.prodlabel, chunk_id),
+      'echo "creating workdir "$workdir',
+      'mkdir -p $workdir',
+      'echo "copying driver to workdir"',
+      'cp the_nano_config.py $workdir',
+      'cd $workdir',
+      'echo "going to run nano step"',
+      'DATE_START=`date +%s`',
+      'cmsRun the_nano_config.py',
+      'DATE_END=`date +%s`',
+      'echo "finished running nano step"',
+      'echo "content of the workdir"',
+      'ls -l',
+      'outdir="/eos/cms/store/group/phys_bphys/{}/CPVGen/{}/BsToPhiPhiTo4K/nanoFiles/Chunk{}"'.format(self.user, self.prodlabel, chunk_id),
+      'echo "creating outdir "$outdir',
+      'mkdir -p $outdir',
+      'echo "copying the file"',
+      'mv bparknano.root $outdir',
+      'cd $CMSSW_BASE/src/PhysicsTools/CPVNano/test',
+      'echo "clearing the workdir"',
+      '#rm -r $workdir',
+      'runtime=$((DATE_END-DATE_START))',
+      'echo "Wallclock running time: $runtime s"',
+      ]
+
+    submitter = '\n'.join(submitter)
+
+    f_out = open('the_submitter.sh', 'w+')
+    f_out.write(submitter)
+    f_out.close()
+
+    print('\t--> the_submitter.sh created')
+
+
+  def submit_crab(self):
       command = 'crab submit -c the_crab_config.py'
       os.system(command)
 
@@ -292,6 +346,17 @@ class NanoLauncher(object):
 
       command_rm_crab = 'rm the_crab_config.py'
       os.system(command_rm_crab)
+
+
+  def submit_local(self):
+      command = 'sh the_submitter.sh'
+      os.system(command)
+
+      command_rm_nano = 'rm the_nano_config.py'
+      os.system(command_rm_nano)
+
+      command_rm_submitter = 'rm the_submitter.sh'
+      os.system(command_rm_submitter)
 
 
   def process(self):
@@ -311,9 +376,33 @@ class NanoLauncher(object):
         self.prepare_CRAB_config(key=key) 
 
         print('\n   -> Submitting...') 
-        self.submit()
+        self.submit_crab()
 
         print('\n   -> Submission completed')
+
+
+    if self.mcprivate:
+        print('\n-> Processing private mc sample {}'.format(self.prodlabel)) 
+
+        path_dir = '/eos/cms/store/group/phys_bphys/{}/CPVGen/{}/BsToPhiPhiTo4K/'.format(self.user, self.prodlabel)
+        directories = [f for f in glob('{}/*'.format(path_dir)) if os.path.basename(f).startswith('crab')]
+
+        for directory in directories:
+            # get chunks
+            chunks = [f for f in glob('{}/*/*'.format(directory))]
+
+            for chunk in chunks:
+                chunk_id = self.get_chunk_id(chunk=chunk)
+                print('\n   --- Chunk{} ---'.format(chunk_id)) 
+
+                print('\n   -> Preparing nano config') 
+                self.prepare_nano_config(chunk=chunk) 
+
+                print('\n   -> Preparing submitter') 
+                self.prepare_submitter(chunk_id=chunk_id) 
+
+                print('\n   -> Processing...') 
+                self.submit_local()
 
     print('\nDone')
 
