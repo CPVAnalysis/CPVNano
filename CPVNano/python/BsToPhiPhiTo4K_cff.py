@@ -350,6 +350,23 @@ BsToPhiPhiTo4KTable = cms.EDProducer(
         k4_phi = ufloat('k4_fitted_phi'),
         #lep_vzdiff = ufloat('lep_vzdiff'),
         isMatched = uint('isMatched'),
+        gen_Bs_ct = ufloat('gen_Bs_ct'),
+        k1_genIdx = uint('k1_genIdx'),
+        k2_genIdx = uint('k2_genIdx'),
+        k3_genIdx = uint('k3_genIdx'),
+        k4_genIdx = uint('k4_genIdx'),
+        genKaon1Mother_genIdx = uint('genKaon1Mother_genIdx'),
+        genKaon2Mother_genIdx = uint('genKaon2Mother_genIdx'),
+        genKaon3Mother_genIdx = uint('genKaon3Mother_genIdx'),
+        genKaon4Mother_genIdx = uint('genKaon4Mother_genIdx'),
+        genKaon1GrandMother_genIdx = uint('genKaon1GrandMother_genIdx'),
+        genKaon2GrandMother_genIdx = uint('genKaon2GrandMother_genIdx'),
+        genKaon3GrandMother_genIdx = uint('genKaon3GrandMother_genIdx'),
+        genKaon4GrandMother_genIdx = uint('genKaon4GrandMother_genIdx'),
+        genKaon1GrandGrandMother_genIdx = uint('genKaon1GrandGrandMother_genIdx'),
+        genKaon2GrandGrandMother_genIdx = uint('genKaon2GrandGrandMother_genIdx'),
+        genKaon3GrandGrandMother_genIdx = uint('genKaon3GrandGrandMother_genIdx'),
+        genKaon4GrandGrandMother_genIdx = uint('genKaon4GrandGrandMother_genIdx'),
     )
 )
 

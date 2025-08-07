@@ -9,6 +9,7 @@
 #include <memory>
 #include <map>
 #include <string>
+#include <set>
 #include "DataFormats/PatCandidates/interface/PackedCandidate.h"
 #include "CommonTools/Utils/interface/StringCutObjectSelector.h"
 #include "DataFormats/PatCandidates/interface/CompositeCandidate.h"
@@ -507,6 +508,20 @@ void BsToPhiPhiTo4KBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSe
       int k1_genIdx(-1), k2_genIdx(-1), k3_genIdx(-1), k4_genIdx(-1);
       int genKaon1Mother_genPdgId(-1), genKaon2Mother_genPdgId(-1), genKaon3Mother_genPdgId(-1), genKaon4Mother_genPdgId(-1);
       int genKaon1GrandMother_genPdgId(-1), genKaon2GrandMother_genPdgId(-1), genKaon3GrandMother_genPdgId(-1), genKaon4GrandMother_genPdgId(-1);
+      float gen_Bs_ct = -99.;
+
+      int genKaon1Mother_genIdx = -1;
+      int genKaon2Mother_genIdx = -1;
+      int genKaon3Mother_genIdx = -1;
+      int genKaon4Mother_genIdx = -1;
+      int genKaon1GrandMother_genIdx = -1;
+      int genKaon2GrandMother_genIdx = -1;
+      int genKaon3GrandMother_genIdx = -1;
+      int genKaon4GrandMother_genIdx = -1;
+      int genKaon1GrandGrandMother_genIdx = -1;
+      int genKaon2GrandGrandMother_genIdx = -1;
+      int genKaon3GrandGrandMother_genIdx = -1;
+      int genKaon4GrandGrandMother_genIdx = -1;
 
       if(isMC_ == true){
         // pdgId of the gen particle to which the final-state particles are matched
@@ -523,9 +538,10 @@ void BsToPhiPhiTo4KBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSe
 
         //std::cout << k1_genIdx << " " << k2_genIdx << " " << k3_genIdx << " " << k4_genIdx << std::endl;
         
-        //if(k1_genIdx != -1 && k1_genIdx != k2_genIdx && k1_genIdx != k3_genIdx && k1_genIdx != k4_genIdx){
-        if(k1_genIdx != -1 && k2_genIdx != -1 && k3_genIdx != -1 && k4_genIdx != -1){
-          //TODO check indices are all different
+        // needed to check that indices are all different
+        std::set<int> list_idx = {k1_genIdx, k2_genIdx, k3_genIdx, k4_genIdx};
+
+        if(k1_genIdx != -1 && k2_genIdx != -1 && k3_genIdx != -1 && k4_genIdx != -1 && list_idx.size() == 4){
 
           // getting the associated gen particles
           edm::Ptr<reco::GenParticle> genKaon1_ptr(genParticles, k1_genIdx);
@@ -533,11 +549,7 @@ void BsToPhiPhiTo4KBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSe
           edm::Ptr<reco::GenParticle> genKaon3_ptr(genParticles, k3_genIdx);
           edm::Ptr<reco::GenParticle> genKaon4_ptr(genParticles, k4_genIdx);
 
-          // index of the associated mother particle
-          int genKaon1Mother_genIdx = -1;
-          int genKaon2Mother_genIdx = -1;
-          int genKaon3Mother_genIdx = -1;
-          int genKaon4Mother_genIdx = -1;
+          // index of the associated mother particle (phi meson)
           if(genKaon1_ptr->numberOfMothers()>0) genKaon1Mother_genIdx = genKaon1_ptr->motherRef(0).key();
           if(genKaon2_ptr->numberOfMothers()>0) genKaon2Mother_genIdx = genKaon2_ptr->motherRef(0).key();
           if(genKaon3_ptr->numberOfMothers()>0) genKaon3Mother_genIdx = genKaon3_ptr->motherRef(0).key();
@@ -555,11 +567,7 @@ void BsToPhiPhiTo4KBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSe
           genKaon3Mother_genPdgId = genKaon3Mother_ptr->pdgId();
           genKaon4Mother_genPdgId = genKaon4Mother_ptr->pdgId();
           
-          // index of the grandmother particle
-          int genKaon1GrandMother_genIdx = -1;
-          int genKaon2GrandMother_genIdx = -1;
-          int genKaon3GrandMother_genIdx = -1;
-          int genKaon4GrandMother_genIdx = -1;
+          // index of the grandmother particle (Bs meson)
           if(genKaon1Mother_ptr->numberOfMothers()>0) genKaon1GrandMother_genIdx = genKaon1Mother_ptr->motherRef(0).key();
           if(genKaon2Mother_ptr->numberOfMothers()>0) genKaon2GrandMother_genIdx = genKaon2Mother_ptr->motherRef(0).key();
           if(genKaon3Mother_ptr->numberOfMothers()>0) genKaon3GrandMother_genIdx = genKaon3Mother_ptr->motherRef(0).key();
@@ -576,6 +584,35 @@ void BsToPhiPhiTo4KBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSe
           genKaon2GrandMother_genPdgId = genKaon2GrandMother_ptr->pdgId();
           genKaon3GrandMother_genPdgId = genKaon3GrandMother_ptr->pdgId();
           genKaon4GrandMother_genPdgId = genKaon4GrandMother_ptr->pdgId();
+
+          // get the grand-grandmother particle (for ct computation)
+          if(genKaon1GrandMother_ptr->numberOfMothers()>0) genKaon1GrandGrandMother_genIdx = genKaon1GrandMother_ptr->motherRef(0).key();
+          edm::Ptr<reco::GenParticle> genKaon1GrandGrandMother_ptr(genParticles, genKaon1GrandGrandMother_genIdx);
+
+          // compute ct
+          float gen_Bs_px = genKaon1GrandMother_ptr->px(); 
+          float gen_Bs_py = genKaon1GrandMother_ptr->py(); 
+
+          // take PV as vertex of Bs meson or its mother
+          float gen_pv_x = -1.;
+          float gen_pv_y = -1.;
+          if(genKaon1GrandGrandMother_genIdx != -1){
+            gen_pv_x = genKaon1GrandGrandMother_ptr->vx();
+            gen_pv_y = genKaon1GrandGrandMother_ptr->vy();
+          }
+          else{
+            gen_pv_x = genKaon1GrandMother_ptr->vx();
+            gen_pv_y = genKaon1GrandMother_ptr->vy();
+          }
+
+          // take SV as phi meson vertex
+          float gen_sv_x = genKaon1Mother_ptr->vx();
+          float gen_sv_y = genKaon1Mother_ptr->vy();
+
+          float gen_Lx = gen_sv_x - gen_pv_x;
+          float gen_Ly = gen_sv_y - gen_pv_y;
+
+          gen_Bs_ct = mass_Bs_PDG * (gen_Lx * gen_Bs_px + gen_Ly * gen_Bs_py) / (gen_Bs_px * gen_Bs_px + gen_Bs_py * gen_Bs_py);
 
           //std::cout << "k1: " << k1_genPdgId << " mother: " << genKaon1Mother_genPdgId << " grandmother: " << genKaon1GrandMother_genPdgId << std::endl;
 
@@ -600,6 +637,23 @@ void BsToPhiPhiTo4KBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSe
       }
 
       Bs_cand.addUserInt("isMatched", isMatched);
+      Bs_cand.addUserFloat("gen_Bs_ct", gen_Bs_ct);
+      Bs_cand.addUserInt("k1_genIdx", k1_genIdx);
+      Bs_cand.addUserInt("k2_genIdx", k2_genIdx);
+      Bs_cand.addUserInt("k3_genIdx", k3_genIdx);
+      Bs_cand.addUserInt("k4_genIdx", k4_genIdx);
+      Bs_cand.addUserInt("genKaon1Mother_genIdx", genKaon1Mother_genIdx);
+      Bs_cand.addUserInt("genKaon2Mother_genIdx", genKaon2Mother_genIdx);
+      Bs_cand.addUserInt("genKaon3Mother_genIdx", genKaon3Mother_genIdx);
+      Bs_cand.addUserInt("genKaon4Mother_genIdx", genKaon4Mother_genIdx);
+      Bs_cand.addUserInt("genKaon1GrandMother_genIdx", genKaon1GrandMother_genIdx);
+      Bs_cand.addUserInt("genKaon2GrandMother_genIdx", genKaon2GrandMother_genIdx);
+      Bs_cand.addUserInt("genKaon3GrandMother_genIdx", genKaon3GrandMother_genIdx);
+      Bs_cand.addUserInt("genKaon4GrandMother_genIdx", genKaon4GrandMother_genIdx);
+      Bs_cand.addUserInt("genKaon1GrandGrandMother_genIdx", genKaon1GrandGrandMother_genIdx);
+      Bs_cand.addUserInt("genKaon2GrandGrandMother_genIdx", genKaon2GrandGrandMother_genIdx);
+      Bs_cand.addUserInt("genKaon3GrandGrandMother_genIdx", genKaon3GrandGrandMother_genIdx);
+      Bs_cand.addUserInt("genKaon4GrandGrandMother_genIdx", genKaon4GrandGrandMother_genIdx);
 
       // save candidate
       ret_value->push_back(Bs_cand);
