@@ -69,14 +69,6 @@ class MuonTriggerSelector : public edm::stream::EDProducer<> {
     const double max_deltaR_trigger_matching_;
     const double max_deltaPtRel_trigger_matching_;
     
-    // add displaced standalone muons
-    const bool add_dsa_;
-
-    // dsa to slimmed muon matching
-    const bool do_dsa_matching_;
-    const double max_deltaR_dsaToSlimmed_matching_;
-    const double max_deltaPtRel_dsaToSlimmed_matching_;
-
     // for the sel muon
     const double selmu_ptMin_;          // min pT in all muons for B candidates
     const double selmu_absEtaMax_;      // max eta ""
@@ -98,10 +90,6 @@ MuonTriggerSelector::MuonTriggerSelector(const edm::ParameterSet &iConfig):
   //
   max_deltaR_trigger_matching_(iConfig.getParameter<double>("max_deltaR_trigger_matching")),
   max_deltaPtRel_trigger_matching_(iConfig.getParameter<double>("max_deltaPtRel_trigger_matching")),
-  add_dsa_(iConfig.getParameter<bool>("add_dsa")),
-  do_dsa_matching_(iConfig.getParameter<bool>("do_dsa_matching")),
-  max_deltaR_dsaToSlimmed_matching_(iConfig.getParameter<double>("max_deltaR_dsaToSlimmed_matching")),
-  max_deltaPtRel_dsaToSlimmed_matching_(iConfig.getParameter<double>("max_deltaPtRel_dsaToSlimmed_matching")),
   selmu_ptMin_(iConfig.getParameter<double>("selmu_ptMin")),
   selmu_absEtaMax_(iConfig.getParameter<double>("selmu_absEtaMax")),
   HLTPaths_(iConfig.getParameter<std::vector<std::string>>("HLTPaths"))
@@ -180,26 +168,10 @@ void MuonTriggerSelector::produce(edm::Event& iEvent, const edm::EventSetup& iSe
 
         std::vector<int> frs(HLTPaths_.size(),0); //path fires for each reco muon
         std::vector<int> prescale(HLTPaths_.size(),-1);
-        //std::vector<int> sds(L1Seeds_.size(),0);// L1 Seeds for each L1 muon
         std::vector<float> temp_matched_to(HLTPaths_.size(),1000.);
         std::vector<float> temp_DR(HLTPaths_.size(),1000.);
         std::vector<float> temp_DPT(HLTPaths_.size(),1000.);
         int ipath=-1;
-
-/*        int iseed=-1;
-        for (const std::string seed: L1Seeds_){
-            iseed++;
-            char cstr[(seed+"*").size()+1];
-            strcpy( cstr,(seed+"*").c_str());
-            if(muon.triggerObjectMatches().size()!=0){
-                for(size_t i=0;i<muon.triggerObjectMatches().size(); i++){
-                    if(muon.triggerObjectMatch(i)!=0 && muon.triggerObjectMatch(i)->hasAlgorithmName(cstr,true)){
-                        sds[iseed]=1;
-                        std::cout << "L1 Seed="<< cstr <<" fired="<< sds[iseed] << endl;
-                    }
-                }
-            }
-        } */
 
         // for each muon, we study whether it fires a HLT line or not
         for (const std::string& path: HLTPaths_){
@@ -301,86 +273,6 @@ void MuonTriggerSelector::produce(edm::Event& iEvent, const edm::EventSetup& iSe
         }
     }
 
-    //////////////////////////////
-    /* method 2 */
-
-    /*
-    // we first get the trigger objects
-    edm::Handle<edm::TriggerResults> triggerBits;
-    iEvent.getByToken(triggerBits_, triggerBits);
-    const edm::TriggerNames &names = iEvent.triggerNames(*triggerBits);
-
-    edm::Handle<std::vector<pat::TriggerObjectStandAlone>> triggerObjects;
-    iEvent.getByToken(triggerObjects_, triggerObjects);
-
-
-    // container for the trigger objects, that will be later on matched to reco muons
-    std::vector<pat::TriggerObjectStandAlone> triggeringMuons;
-
-
-    for (pat::TriggerObjectStandAlone obj : *triggerObjects) { // note: not "const &" since we want to call unpackPathNames
-      obj.unpackFilterLabels(iEvent, *triggerBits);
-      obj.unpackPathNames(names);
-
-      bool isTriggerMuon = false;
-      for (unsigned h = 0; h < obj.filterIds().size(); ++h){
-        if(obj.filterIds()[h] == 83){ 
-          isTriggerMuon = true; 
-          break;
-        } 
-      }
-
-      if(!isTriggerMuon) continue; 
-      for (unsigned h = 0; h < obj.filterLabels().size(); ++h){
-        std::string filterName = obj.filterLabels()[h];
-        if(filterName.find("hltL3") != std::string::npos  && filterName.find("Park") != std::string::npos){
-          isTriggerMuon = true;
-          if(debug) std::cout << "\t   Filters:   " << filterName; 
-          break;
-        }
-        else{ isTriggerMuon = false; }
-      }
-
-      if(!isTriggerMuon) continue;
-
-      std::cout << "\tTrigger object:  pt " << obj.pt() << ", eta " << obj.eta() << ", phi " << obj.phi() << std::endl;
-      // Print trigger object collection and type
-      std::cout << "\t   Collection: " << obj.collection() << std::endl;
-      std::cout << "\t   Type IDs:   ";
-
-      for (unsigned h = 0; h < obj.filterIds().size(); ++h) std::cout << " " << obj.filterIds()[h] ;
-      std::cout << std::endl;
-
-      for (unsigned h = 0; h < obj.filterLabels().size(); ++h) std::cout << " " << obj.filterLabels()[h];
-      std::cout << std::endl;
-
-      std::vector pathNamesAll = obj.pathNames(false);
-      std::vector pathNamesLast = obj.pathNames(true);
-
-      std::cout << "\t   Paths (" << pathNamesAll.size()<<"/"<<pathNamesLast.size()<<"):    ";
-
-      for (unsigned h = 0, n = pathNamesAll.size(); h < n; ++h) {
-            bool isBoth = obj.hasPathName( pathNamesAll[h], true, true );
-            bool isL3   = obj.hasPathName( pathNamesAll[h], false, true );
-            bool isLF   = obj.hasPathName( pathNamesAll[h], true, false );
-            bool isNone = obj.hasPathName( pathNamesAll[h], false, false );
-            std::cout << "   " << pathNamesAll[h];
-            if (isBoth) std::cout << "(L,3)";
-            if (isL3 && !isBoth) std::cout << "(*,3)";
-            if (isLF && !isBoth) std::cout << "(L,*)";
-            if (isNone && !isBoth && !isL3 && !isLF) std::cout << "(*,*)";
-      }
-      std::cout << std::endl;
-
-      triggeringMuons.push_back(obj);
-      if(debug){ std::cout << "\tTrigger object:  pt " << obj.pt() << ", eta " << obj.eta() << ", phi " << obj.phi() << std::endl;
-        // Print trigger object collection and type
-        std::cout << "\t   Collection: " << obj.collection() << std::endl;
-      }
-    }//trigger objects
-    */
-
-
     if(debug)std::cout << "number of Muons=" <<slimmed_muons->size() << endl;
     // And now create a collection with trg muons from bParking line (10 first elements of HLTPaths)
     for(const pat::Muon & muon : *slimmed_muons){
@@ -427,8 +319,6 @@ void MuonTriggerSelector::produce(edm::Event& iEvent, const edm::EventSetup& iSe
       selmuons_out->back().addUserInt("isTriggeringBPark", muonIsTriggerBPark[iMuo]);
       selmuons_out->back().addUserFloat("DR", muonDR[iMuo]);
       selmuons_out->back().addUserFloat("DPT" ,muonDPT[iMuo]);
-      selmuons_out->back().addUserInt("isDSAMuon", 0);
-      selmuons_out->back().addUserInt("isSlimmedMuon", 1);
 
       //TODO check that the variables are called at the correct point
       //TODO add further variables
@@ -485,126 +375,9 @@ void MuonTriggerSelector::produce(edm::Event& iEvent, const edm::EventSetup& iSe
 
       selmuons_out->back().addUserFloat("dxy_BS", mu_dxy_BS);
       selmuons_out->back().addUserFloat("dxyS_BS", mu_dxyS_BS);
-
-      selmuons_out->back().addUserInt("isMatchedToSlimmedMuon", -99);
-      selmuons_out->back().addUserInt("indexMatchedSlimmedMuon", -99);
-      selmuons_out->back().addUserFloat("dsaToSlimmedMatching_deltaPtRel", -99.);
-      selmuons_out->back().addUserFloat("dsaToSlimmedMatching_deltaR", -99.);
-      selmuons_out->back().addUserFloat("dsaToSlimmedMatching_deltadxyRel", -99.);
-      selmuons_out->back().addUserFloat("dsaToSlimmedMatching_deltadzRel", -99.);
-      selmuons_out->back().addUserInt("passDSAMuonID", -99);
     }
 
     //std::cout << "at least one triggering muon: " << at_least_one_triggering_muon << std::endl;
-
-    // add the displaced standalone muons to the collection
-    /*
-    if(add_dsa_){
-      for(const reco::Track & dsa_muon : *displaced_standalone_muons){
-        //unsigned int iDSAMuon(&dsa_muon - &(displaced_standalone_muons->at(0)));
-        if(dsa_muon.pt()<selmu_ptMin_) continue;
-        if(fabs(dsa_muon.eta())>selmu_absEtaMax_) continue;
-
-        // add the muon to the transient track collection
-        // one has to make sure that the indices in the muon and transient track collections match
-        const reco::TransientTrack muonTT((*(&dsa_muon)), &bField); 
-        if(!muonTT.isValid()) continue; 
-        trans_muons_out->emplace_back(muonTT);
-
-        selmuons_out->emplace_back(dsa_muon);
-
-        for(unsigned int i=0; i<HLTPaths_.size(); i++){
-          selmuons_out->back().addUserInt(HLTPaths_[i], -1);
-          selmuons_out->back().addUserInt(HLTPaths_[i] + "_prescale", -1);
-        }
-        selmuons_out->back().addUserInt("isTriggering", -1);
-        selmuons_out->back().addUserInt("isTriggeringBPark", -1);
-        selmuons_out->back().addUserFloat("DR", -1.);
-        selmuons_out->back().addUserFloat("DPT", -1.);
-        selmuons_out->back().addUserInt("isDSAMuon", 1);
-        selmuons_out->back().addUserInt("isSlimmedMuon", 0);
-        selmuons_out->back().addUserFloat("dz", dsa_muon.dz(PV.position()));
-        selmuons_out->back().addUserFloat("dzS", dsa_muon.dz(PV.position())/dsa_muon.dzError());
-        selmuons_out->back().addUserFloat("dxy", dsa_muon.dxy(PV.position()));
-        selmuons_out->back().addUserFloat("dxyS", dsa_muon.dxy(PV.position())/dsa_muon.dxyError());
-
-        //std::cout << "DSA muon " << iDSAMuon << " pt " << dsa_muon.pt()  << " eta " << dsa_muon.eta() << std::endl;
-
-        // perform dR matching between DSA and slimmed muons
-        // (without ambiguity resolving, i.e that a given slimmed muon can be matched to more than one DSA muon)
-        bool isMatchedToSlimmedMuon = 0;
-        int indexMatchedSlimmedMuon = -1;
-        float dsaToSlimmedMatching_deltaR = -1;
-        float dsaToSlimmedMatching_deltaPtRel = -1.;
-        float dsaToSlimmedMatching_deltadxyRel = -1.;
-        float dsaToSlimmedMatching_deltadzRel = -1.;
-
-        if(do_dsa_matching_){
-          std::vector<pair<int, std::array<float, 4>>> pairs_slimmedIdx_deltaPtRel;
-
-          // for each DSA muon, get the slimmed muons that are within the deltaR_max cone
-          for(const pat::Muon & slimmed_muon : *slimmed_muons){
-            // for each slimmed  muon, apply same selection as above, to make sure that the indices are consistent
-            if(slimmed_muon.pt()<selmu_ptMin_) continue;
-            if(fabs(slimmed_muon.eta())>selmu_absEtaMax_) continue;
-            const reco::TransientTrack muonTT((*(slimmed_muon.bestTrack())),&bField);
-            if(!muonTT.isValid()) continue;
-
-            unsigned int iSlimmedMuon(&slimmed_muon - &(slimmed_muons->at(0)));
-
-            float deltaR_dsa_slimmed = reco::deltaR(dsa_muon.eta(), dsa_muon.phi(), slimmed_muon.eta(), slimmed_muon.phi());
-            if(deltaR_dsa_slimmed < max_deltaR_dsaToSlimmed_matching_){
-              pair<int, std::array<float, 4>> pairs_slimmedIdx_deltaPtRel_tmp;
-              pairs_slimmedIdx_deltaPtRel_tmp.first = iSlimmedMuon; //indexMatchedSlimmedMuon;
-              pairs_slimmedIdx_deltaPtRel_tmp.second[0] = fabs(dsa_muon.pt() - slimmed_muon.pt()) / slimmed_muon.pt();
-              pairs_slimmedIdx_deltaPtRel_tmp.second[1] = deltaR_dsa_slimmed;
-              pairs_slimmedIdx_deltaPtRel_tmp.second[2] = fabs(dsa_muon.dxy(PV.position()) - slimmed_muon.dB(slimmed_muon.PV2D)) / fabs(slimmed_muon.dB(slimmed_muon.PV2D));
-              pairs_slimmedIdx_deltaPtRel_tmp.second[3] = fabs(dsa_muon.dz(PV.position()) - slimmed_muon.dB(slimmed_muon.PVDZ)) / fabs(slimmed_muon.dB(slimmed_muon.PVDZ));
-              pairs_slimmedIdx_deltaPtRel.push_back(pairs_slimmedIdx_deltaPtRel_tmp);
-              //std::cout << "DSA muon " << iDSAMuon << " matched to slimmed muon " << pairs_slimmedIdx_deltaPtRel_tmp.first << " with deltaPtRel " << fabs(dsa_muon.pt() - slimmed_muon.pt()) / slimmed_muon.pt() << " and deltaR " << deltaR_dsa_slimmed << std::endl;
-            }
-          }
-          // sort the pairs in deltaPtRel
-          sort(pairs_slimmedIdx_deltaPtRel.begin(), pairs_slimmedIdx_deltaPtRel.end(), [](const pair<int, std::array<float, 4>> &pair_i, const pair<int, std::array<float, 4>> &pair_j){
-            return pair_i.second[0] < pair_j.second[0];
-          });
-
-          // fetch the matching index
-          if(pairs_slimmedIdx_deltaPtRel.size() > 0 && pairs_slimmedIdx_deltaPtRel[0].second[0] < max_deltaPtRel_dsaToSlimmed_matching_){
-            isMatchedToSlimmedMuon = 1;
-            indexMatchedSlimmedMuon = pairs_slimmedIdx_deltaPtRel[0].first;
-            dsaToSlimmedMatching_deltaPtRel = pairs_slimmedIdx_deltaPtRel[0].second[0];
-            dsaToSlimmedMatching_deltaR = pairs_slimmedIdx_deltaPtRel[0].second[1];
-            dsaToSlimmedMatching_deltadxyRel = pairs_slimmedIdx_deltaPtRel[0].second[2];
-            dsaToSlimmedMatching_deltadzRel = pairs_slimmedIdx_deltaPtRel[0].second[3];
-            //std::cout << "DSA muon is matched " << isMatchedToSlimmedMuon << " to slimmed muon " << indexMatchedSlimmedMuon << " with deltaR " << dsaToSlimmedMatching_deltaR << " deltaPtRel " << dsaToSlimmedMatching_deltaPtRel << std::endl;
-          }
-        }
-
-        selmuons_out->back().addUserInt("isMatchedToSlimmedMuon", isMatchedToSlimmedMuon);
-        selmuons_out->back().addUserInt("indexMatchedSlimmedMuon", indexMatchedSlimmedMuon);
-        selmuons_out->back().addUserFloat("dsaToSlimmedMatching_deltaPtRel", dsaToSlimmedMatching_deltaPtRel);
-        selmuons_out->back().addUserFloat("dsaToSlimmedMatching_deltaR", dsaToSlimmedMatching_deltaR);
-        selmuons_out->back().addUserFloat("dsaToSlimmedMatching_deltadxyRel", dsaToSlimmedMatching_deltadxyRel);
-        selmuons_out->back().addUserFloat("dsaToSlimmedMatching_deltadzRel", dsaToSlimmedMatching_deltadzRel);
-
-        // building DSA muon ID
-        bool passDSAMuonID = false;
-        if(
-          (
-           (dsa_muon.hitPattern().numberOfValidMuonDTHits() > 18 && dsa_muon.hitPattern().numberOfValidMuonCSCHits() == 0) ||
-           (dsa_muon.hitPattern().numberOfValidMuonHits() > 12 && dsa_muon.hitPattern().numberOfValidMuonCSCHits() > 0)
-          ) &&
-          dsa_muon.normalizedChi2() < 2.5 &&
-          dsa_muon.ptError() / dsa_muon.pt() < 1 && 
-          dsa_muon.hitPattern().muonStationsWithValidHits() > 1
-          ){
-          passDSAMuonID = true;
-        }
-        selmuons_out->back().addUserInt("passDSAMuonID", passDSAMuonID);
-      }
-    }
-    */
 
     //std::cout << std::endl;
 
