@@ -13,6 +13,7 @@ def getOptions():
   parser.add_argument('--pl'      , type=str, dest='pl'          , help='label of the sample file'                                                            , default=None)
   parser.add_argument('--ds'      , type=str, dest='ds'          , help='[optional | data/mccentral] run on specify data set. e.g "--ds D1"'                  , default=None)
   parser.add_argument('--year'    , type=str, dest='year'        , help='year to process in data'                                                             , default=None)
+  parser.add_argument('--tagnano' , type=str, dest='tagnano'     , help='[optional] tag to be added on the outputfile name of the nano sample'                , default=None)
   parser.add_argument('--data'              , dest='data'        , help='run the nano tool on a data sample'                             , action='store_true', default=False)
   parser.add_argument('--mcprivate'         , dest='mcprivate'   , help='run the BParking nano tool on a private MC sample'              , action='store_true', default=False)
   return parser.parse_args()
@@ -27,11 +28,13 @@ class NanoLauncher(object):
   def __init__(self, opt):
     self.prodlabel = vars(opt)['pl']
     self.year      = vars(opt)['year']
+    self.tagnano   = vars(opt)['tagnano']
     self.ds        = vars(opt)['ds']
     self.data      = vars(opt)['data']
     self.mcprivate = vars(opt)['mcprivate']
 
     self.user = os.environ["USER"]
+    self.outfilename_nano = 'bparknano.root' if self.tagnano == None else 'bparknano_{}.root'.format(self.tagnano)
 
     if self.year not in ['2018', '2022', '2024']:
       raise RuntimeError("Wrong year '{}'. Please choose amongst ['2018', '2022', '2024']'".format(self.year))
@@ -157,7 +160,7 @@ class NanoLauncher(object):
       "        dataTier = cms.untracked.string('NANOAOD'),",
       "        filterName = cms.untracked.string('')",
       "    ),",
-      "    fileName = cms.untracked.string('file:bparknano.root'),",
+      "    fileName = cms.untracked.string('file:{}'),".format(self.outfilename_nano),
       "    outputCommands = cms.untracked.vstring(",
       "        'drop *',",
       "        'keep nanoaodFlatTable_*Table_*_*',",
@@ -283,7 +286,7 @@ class NanoLauncher(object):
       "config.JobType.psetName        =  'the_nano_config.py'", 
       "config.JobType.inputFiles      = ['the_nano_config.py']", 
       "config.JobType.allowUndistributedCMSSW = True", 
-      "config.JobType.outputFiles     = ['bparknano.root']", 
+      "config.JobType.outputFiles     = ['{}']".format(self.outfilename_nano), 
       "config.JobType.maxMemoryMB = 2500",
       "#config.JobType.maxJobRuntimeMin = 3000 #TODO add",
 
@@ -320,7 +323,7 @@ class NanoLauncher(object):
       'echo "creating outdir "$outdir',
       'mkdir -p $outdir',
       'echo "copying the file"',
-      'mv bparknano.root $outdir',
+      'mv {} $outdir'.format(self.outfilename_nano),
       'cd $CMSSW_BASE/src/PhysicsTools/CPVNano/test',
       'echo "clearing the workdir"',
       '#rm -r $workdir',
@@ -393,7 +396,8 @@ class NanoLauncher(object):
 
             for chunk in chunks:
                 chunk_id = self.get_chunk_id(chunk=chunk)
-                print('\n   --- Chunk{} ---'.format(chunk_id)) 
+                #if chunk_id != 1 and chunk_id != 2: continue
+                print('\n   #-#-#- Chunk{} -#-#-#'.format(chunk_id)) 
 
                 print('\n   -> Preparing nano config') 
                 self.prepare_nano_config(chunk=chunk) 
