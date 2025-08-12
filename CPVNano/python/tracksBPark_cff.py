@@ -92,9 +92,9 @@ tracksBParkMCMatchForTable = cms.EDProducer("MCMatcher",   # cut on deltaR, delt
     mcPdgId     = cms.vint32(321),                     # one or more PDG ID (321 = charged kaon, 211 = charged pion); absolute values (see below)
     checkCharge = cms.bool(False),              # True = require RECO and MC objects to have the same charge
     mcStatus    = cms.vint32(1),                # PYTHIA status code (1 = stable, 2 = shower, 3 = hard scattering)
-    maxDeltaR   = cms.double(0.15), #0.03       # Minimum deltaR for the match
-    maxDPtRel   = cms.double(0.5),              # Minimum deltaPt/Pt for the match
-    resolveAmbiguities    = cms.bool(False),     # Forbid two RECO objects to match to the same GEN object
+    maxDeltaR   = cms.double(0.05), #0.03       # Minimum deltaR for the match
+    maxDPtRel   = cms.double(0.15),             # Minimum deltaPt/Pt for the match
+    resolveAmbiguities    = cms.bool(False),    # Forbid two RECO objects to match to the same GEN object
     resolveByMatchQuality = cms.bool(True),     # False = just match input in order; True = pick lowest deltaR pair first
     motherPdgId = cms.vint32(333),
 )
