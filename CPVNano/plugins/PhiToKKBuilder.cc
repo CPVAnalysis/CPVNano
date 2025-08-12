@@ -48,8 +48,10 @@ public:
 
     // gen-particles
     genParticles_ {consumes<reco::GenParticleCollection>(cfg.getParameter<edm::InputTag>("genParticles"))}, 
-
     isMC_ {cfg.getParameter<bool>("isMC")},
+
+    // vertices
+    vertexToken_(consumes<reco::VertexCollection> (cfg.getParameter<edm::InputTag>( "vertices" ))), 
 
     // beamspot
     beamspot_{consumes<reco::BeamSpot>(cfg.getParameter<edm::InputTag>("beamSpot"))}{ 
@@ -85,8 +87,10 @@ private:
 
   // gen-particles
   const edm::EDGetTokenT<reco::GenParticleCollection> genParticles_;
-
   const bool isMC_;
+  
+  // vertices
+  const edm::EDGetTokenT<reco::VertexCollection> vertexToken_;
 
   // beamspot
   const edm::EDGetTokenT<reco::BeamSpot> beamspot_;  
@@ -109,6 +113,10 @@ void PhiToKKBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
 
   edm::Handle<reco::BeamSpot> beamspot;
   evt.getByToken(beamspot_, beamspot);  
+
+  edm::Handle<reco::VertexCollection> vertexHandle;
+  evt.getByToken(vertexToken_, vertexHandle);
+  const reco::Vertex & PV = vertexHandle->front();
 
   // output
   std::unique_ptr<pat::CompositeCandidateCollection> ret_value(new pat::CompositeCandidateCollection());
@@ -228,7 +236,34 @@ void PhiToKKBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
       // apply pots-fit selection on phi candidate
       //std::cout << "before postfit selection" << std::endl;
       if(!post_vtx_selection_phi_(phi_cand)) continue; //TODO move to after definition of user floats?
-        
+      
+      //compute ct  
+      const float mass_phi_PDG = 1.019460; // GeV 
+
+      float Lx = fitter_phi.fitted_vtx().x() - beamspot->x0();
+      float Ly = fitter_phi.fitted_vtx().y() - beamspot->y0();
+
+      GlobalPoint phi_vtx = fitter_phi.fitted_vtx();
+      auto bs_pos = (*beamspot).position(phi_vtx.z());
+      float Lx_posbsz = phi_vtx.x() - bs_pos.x();
+      float Ly_posbsz = phi_vtx.y() - bs_pos.y();
+
+      auto bs_posbspv = (*beamspot).position(PV.z());
+      float Lx_posbspv = phi_vtx.x() - bs_posbspv.x();
+      float Ly_posbspv = phi_vtx.y() - bs_posbspv.y();
+
+      float phi_fitted_px = phi_fit_p4.px();
+      float phi_fitted_py = phi_fit_p4.py();
+
+      float ct_2D_cm = mass_phi_PDG * (Lx * phi_fitted_px + Ly * phi_fitted_py) / (phi_fitted_px * phi_fitted_px + phi_fitted_py * phi_fitted_py);
+      float ct_2D_cm_posbsz = mass_phi_PDG * (Lx_posbsz * phi_fitted_px + Ly_posbsz * phi_fitted_py) / (phi_fitted_px * phi_fitted_px + phi_fitted_py * phi_fitted_py);
+      float ct_2D_cm_posbspv = mass_phi_PDG * (Lx_posbspv * phi_fitted_px + Ly_posbspv * phi_fitted_py) / (phi_fitted_px * phi_fitted_px + phi_fitted_py * phi_fitted_py);
+
+
+      phi_cand.addUserFloat("phi_ct_2D_cm", ct_2D_cm);
+      phi_cand.addUserFloat("phi_ct_2D_cm_posbsz", ct_2D_cm_posbsz);
+      phi_cand.addUserFloat("phi_ct_2D_cm_posbspv", ct_2D_cm_posbspv);
+       
       // save information on kaons 
       //phi_cand.addUserFloat("phi_fitted_k1_pt", fitter_phi.daughter_p4(0).pt()); 
       phi_cand.addUserFloat("phi_fitted_k1_eta", fitter_phi.daughter_p4(0).eta());
@@ -239,6 +274,8 @@ void PhiToKKBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
       phi_cand.addUserFloat("phi_k1_vx", k1_ptr->vx());
       phi_cand.addUserFloat("phi_k1_vy", k1_ptr->vy());
       phi_cand.addUserFloat("phi_k1_vz", k1_ptr->vz());
+      phi_cand.addUserFloat("phi_k1_drTrg", k1_ptr->userFloat("drTrg"));
+      phi_cand.addUserFloat("phi_k1_dzTrg", k1_ptr->userFloat("dzTrg"));
       phi_cand.addUserFloat("phi_k1_dz", k1_ptr->userFloat("dz"));
       phi_cand.addUserFloat("phi_k1_dxy", k1_ptr->userFloat("dxy"));
       phi_cand.addUserFloat("phi_k1_dzS", k1_ptr->userFloat("dzS"));
@@ -275,6 +312,8 @@ void PhiToKKBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
       phi_cand.addUserFloat("phi_k2_vx", k2_ptr->vx());
       phi_cand.addUserFloat("phi_k2_vy", k2_ptr->vy());
       phi_cand.addUserFloat("phi_k2_vz", k2_ptr->vz());
+      phi_cand.addUserFloat("phi_k2_drTrg", k2_ptr->userFloat("drTrg"));
+      phi_cand.addUserFloat("phi_k2_dzTrg", k2_ptr->userFloat("dzTrg"));
       phi_cand.addUserFloat("phi_k2_dz", k2_ptr->userFloat("dz"));
       phi_cand.addUserFloat("phi_k2_dxy", k2_ptr->userFloat("dxy"));
       phi_cand.addUserFloat("phi_k2_dzS", k2_ptr->userFloat("dzS"));

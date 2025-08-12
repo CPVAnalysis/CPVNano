@@ -7,6 +7,7 @@ PhiToKK = cms.EDProducer(
     kaonsTransientTracks = cms.InputTag('tracksBPark', 'SelectedTransientTracks'),
     genParticles = cms.InputTag("finalGenParticlesBPark"),
     isMC = cms.bool(False),
+    vertices = cms.InputTag("offlineSlimmedPrimaryVertices"),
     beamSpot = cms.InputTag("offlineBeamSpot"),
 
     k1_selection = cms.string(''), #cms.string('pt > 1.5'),
@@ -59,7 +60,6 @@ BsToPhiPhiTo4K = cms.EDProducer(
     vertices = cms.InputTag("offlineSlimmedPrimaryVertices"),
     beamSpot = cms.InputTag("offlineBeamSpot"),
     isMC = cms.bool(False),
-    #isMC = cms.bool(True), #FIXME
 
     # selection Bs
     #pre_vtx_selection_Bs = cms.string('abs(mass-5.367)<0.4'),
@@ -81,6 +81,7 @@ BsToPhiPhiTo4K = cms.EDProducer(
         #'userFloat("Bs_lxy_sig") > 1',
         'userFloat("Bs_sv_prob") > 0.001', 
         'abs(userFloat("Bs_fitted_mass")-5.367)<0.3',
+        #TODO add cut on ct? Both lower and upper cuts?
         ])
     ),
         
@@ -125,6 +126,10 @@ PhiToKKTable = cms.EDProducer(
         phi_charge = ufloat('phi_charge'),
         phi_cos2D = ufloat('phi_cos_theta_2D'),
 
+        phi_ct_2D_cm = ufloat('phi_ct_2D_cm'),
+        phi_ct_2D_cm_posbsz = ufloat('phi_ct_2D_cm_posbsz'),
+        phi_ct_2D_cm_posbspv = ufloat('phi_ct_2D_cm_posbspv'),
+
         k1_idx = uint('k1_idx'),
         k2_idx = uint('k2_idx'),
         k1_pt = ufloat('phi_fitted_k1_pt'),
@@ -136,6 +141,8 @@ PhiToKKTable = cms.EDProducer(
         phi_k1_vx = ufloat('phi_k1_vx'),
         phi_k1_vy = ufloat('phi_k1_vy'),
         phi_k1_vz = ufloat('phi_k1_vz'),
+        phi_k1_drTrg = ufloat('phi_k1_drTrg'),
+        phi_k1_dzTrg = ufloat('phi_k1_dzTrg'),
         phi_k1_dz = ufloat('phi_k1_dz'),
         phi_k1_dxy = ufloat('phi_k1_dxy'),
         phi_k1_dzS = ufloat('phi_k1_dzS'),
@@ -172,6 +179,8 @@ PhiToKKTable = cms.EDProducer(
         phi_k2_vx = ufloat('phi_k2_vx'),
         phi_k2_vy = ufloat('phi_k2_vy'),
         phi_k2_vz = ufloat('phi_k2_vz'),
+        phi_k2_drTrg = ufloat('phi_k2_drTrg'),
+        phi_k2_dzTrg = ufloat('phi_k2_dzTrg'),
         phi_k2_dz = ufloat('phi_k2_dz'),
         phi_k2_dxy = ufloat('phi_k2_dxy'),
         phi_k2_dzS = ufloat('phi_k2_dzS'),
@@ -278,7 +287,6 @@ BsToPhiPhiTo4KTable = cms.EDProducer(
         Bs_ct_2D_cm_posbsz = ufloat('Bs_ct_2D_cm_posbsz'),
         Bs_ct_2D_cm_posbspv = ufloat('Bs_ct_2D_cm_posbspv'),
         Bs_ct_2D_cm_posthepv = ufloat('Bs_ct_2D_cm_posthepv'),
-        Bs_ct_3D_cm = ufloat('Bs_ct_3D_cm'),
 
         the_PV_chi2 = ufloat('the_PV_chi2'),
         the_PV_ndof = ufloat('the_PV_ndof'),
