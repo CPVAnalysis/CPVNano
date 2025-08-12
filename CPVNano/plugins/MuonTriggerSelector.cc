@@ -375,6 +375,22 @@ void MuonTriggerSelector::produce(edm::Event& iEvent, const edm::EventSetup& iSe
 
       selmuons_out->back().addUserFloat("dxy_BS", mu_dxy_BS);
       selmuons_out->back().addUserFloat("dxyS_BS", mu_dxyS_BS);
+
+      selmuons_out->back().addUserFloat("ip3d", fabs(slimmed_muon.dB(slimmed_muon.PV3D)));
+      selmuons_out->back().addUserFloat("sip3d", fabs(slimmed_muon.dB(slimmed_muon.PV3D)/slimmed_muon.edB(slimmed_muon.PV3D)));
+
+      selmuons_out->back().addUserFloat("segmentCompatibility", slimmed_muon.segmentCompatibility());
+      selmuons_out->back().addUserFloat("validHitFraction", slimmed_muon.isGlobalMuon() || slimmed_muon.isTrackerMuon() ? slimmed_muon.innerTrack()->validFraction(): -1.);
+      selmuons_out->back().addUserFloat("kinkFinderChi2", slimmed_muon.combinedQuality().trkKink);
+      selmuons_out->back().addUserFloat("globalNormalisedChi2", slimmed_muon.isGlobalMuon() ? slimmed_muon.globalTrack()->normalizedChi2(): -1.);
+      selmuons_out->back().addUserFloat("localPositionChi2", slimmed_muon.combinedQuality().chi2LocalPosition);
+      selmuons_out->back().addUserFloat("caloCompatibility", slimmed_muon.caloCompatibility());
+      selmuons_out->back().addUserInt("numberOfValidMuonHits", slimmed_muon.isGlobalMuon() ? slimmed_muon.globalTrack()->hitPattern().numberOfValidMuonHits(): -1);
+      selmuons_out->back().addUserInt("numberOfValidPixelHits", slimmed_muon.isGlobalMuon() || slimmed_muon.isTrackerMuon() ? slimmed_muon.innerTrack()->hitPattern().numberOfValidPixelHits(): -1);
+      selmuons_out->back().addUserInt("numberOfTrackerLayers", slimmed_muon.isGlobalMuon() || slimmed_muon.isTrackerMuon() ? slimmed_muon.innerTrack()->hitPattern().trackerLayersWithMeasurement(): -1);
+      selmuons_out->back().addUserInt("numberOfPixelLayers", slimmed_muon.isGlobalMuon() || slimmed_muon.isTrackerMuon() ? slimmed_muon.innerTrack()->hitPattern().pixelLayersWithMeasurement(): -1);
+      selmuons_out->back().addUserInt("trackerHighPurityFlag", slimmed_muon.isGlobalMuon() || slimmed_muon.isTrackerMuon() ? slimmed_muon.innerTrack()->quality(reco::TrackBase::highPurity): -1);
+      selmuons_out->back().addUserInt("nStations", slimmed_muon.numberOfMatchedStations());
     }
 
     //std::cout << "at least one triggering muon: " << at_least_one_triggering_muon << std::endl;
