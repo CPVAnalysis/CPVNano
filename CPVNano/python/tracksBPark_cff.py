@@ -24,11 +24,9 @@ tracksBPark = cms.EDProducer('TrackMerger',
                              #trkPtCut = cms.double(0.47), 
                              #trkEtaCut = cms.double(2.9),
 
-                             # clean tracks wrt trigger muons (checked that not relevant for our study)
-                             do_trgmu_cleaning = cms.bool(False),
-                             dzTrg_cleaning = cms.double(-1), # initial value: 1.8
-                             #drTrg_cleaning = cms.double(0.03), # deltaR requirement between track and trigger muon  
-                             drTrg_cleaning = cms.double(-1), # keep track even in trgmu jet, deltaR requirement between track and trigger muon  
+                             # clean tracks wrt trigger muons
+                             do_trgmu_cleaning = cms.bool(True),
+                             dzTrg_cleaning = cms.double(0.3),
                              # clean tracks wrt muons (checked that not relevant for our study)
                              do_mu_cleaning = cms.bool(False),
                              # clean tracks wrt electrons (checked that not relevant for our study)

@@ -40,13 +40,9 @@ public:
     muonToken_(consumes<pat::MuonCollection>(cfg.getParameter<edm::InputTag>("muons"))),
     eleToken_(consumes<pat::ElectronCollection>(cfg.getParameter<edm::InputTag>("pfElectrons"))),
     vertexToken_(consumes<reco::VertexCollection> (cfg.getParameter<edm::InputTag>( "vertices" ))), 
-    //lowptele_(consumes<pat::ElectronCollection>(cfg.getParameter<edm::InputTag>("lowPtElectrons"))),
-    //gsf2packed_(consumes<edm::Association<pat::PackedCandidateCollection> >(cfg.getParameter<edm::InputTag>("gsf2packed"))),
-    //gsf2lost_(consumes<edm::Association<pat::PackedCandidateCollection> >(cfg.getParameter<edm::InputTag>("gsf2lost"))),
     trkPtCut_(cfg.getParameter<double>("trkPtCut")),
     trkEtaCut_(cfg.getParameter<double>("trkEtaCut")),
     dzTrg_cleaning_(cfg.getParameter<double>("dzTrg_cleaning")),
-    drTrg_cleaning_(cfg.getParameter<double>("drTrg_cleaning")),
     do_trgmu_cleaning_(cfg.getParameter<bool>("do_trgmu_cleaning")),
     do_mu_cleaning_(cfg.getParameter<bool>("do_mu_cleaning")),
     do_el_cleaning_(cfg.getParameter<bool>("do_el_cleaning")),
@@ -75,15 +71,11 @@ private:
   const edm::EDGetTokenT<std::vector<pat::Muon>> muonToken_;
   const edm::EDGetTokenT<pat::ElectronCollection> eleToken_;
   const edm::EDGetTokenT<reco::VertexCollection> vertexToken_;
-  //const edm::EDGetTokenT<pat::ElectronCollection> lowptele_;
-  //const edm::EDGetTokenT<edm::Association<pat::PackedCandidateCollection> > gsf2packed_;
-  //const edm::EDGetTokenT<edm::Association<pat::PackedCandidateCollection> > gsf2lost_;
 
   //selections                                                                 
   const double trkPtCut_;
   const double trkEtaCut_;
   const double dzTrg_cleaning_;
-  const double drTrg_cleaning_;
   const bool do_trgmu_cleaning_;
   const bool do_mu_cleaning_;
   const bool do_el_cleaning_;
@@ -126,13 +118,6 @@ void TrackMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const 
   const reco::Vertex & PV = vertexHandle->front();
   const reco::VertexCollection& vertices = *vertexHandle;
 
-  //edm::Handle<pat::ElectronCollection> lowptele;
-  //evt.getByToken(lowptele_, lowptele);
-  //edm::Handle<edm::Association<pat::PackedCandidateCollection> > gsf2packed;
-  //evt.getByToken(gsf2packed_, gsf2packed);
-  //edm::Handle<edm::Association<pat::PackedCandidateCollection> > gsf2lost;
-  //evt.getByToken(gsf2lost_, gsf2lost);
-
   //for lost tracks / pf discrimination
   unsigned int nTracks = tracks->size();
   unsigned int totalTracks = nTracks + lostTracks->size();
@@ -142,12 +127,6 @@ void TrackMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const 
   std::unique_ptr<TransientTrackCollection>          trans_tracks_out(new TransientTrackCollection);
 
    std::vector< std::pair<pat::CompositeCandidate,reco::TransientTrack> > vectrk_ttrk; 
-  //try topreserve same logic avoiding the copy of the full collection
-  /*
-  //correct logic but a bit convoluted -> changing to smthn simpler
-   std::vector<pat::PackedCandidate> totalTracks(*tracks);
-   totalTracks.insert(totalTracks.end(),lostTracks->begin(),lostTracks->end());
-  */
  
   // for loop is better to be range based - especially for large ensembles  
   for( unsigned int iTrk=0; iTrk<totalTracks; ++iTrk ) {
@@ -164,25 +143,23 @@ void TrackMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const 
         (trk.bestTrack()->normalizedChi2() > trkNormChiMax_ &&
          trkNormChiMax_>0)  )    continue; 
 
-    bool skipTrack=true;
-    float drTrg = 0.0;
-    float dzTrg = 0.0;
+    // keep only tracks close to trigger muon
+    bool skipTrack = true;
+    float dzTrg = -99.;
+    float drTrg = -99.;
     if(do_trgmu_cleaning_){
       for (const pat::Muon & mu: *trgMuons){
-        //remove tracks inside trg muons jet
-        if(reco::deltaR(trk, mu) < drTrg_cleaning_ && drTrg_cleaning_ >0) 
-          continue;
-        //if dz is negative it is deactivated
-        if((fabs(trk.vz() - mu.vz()) > dzTrg_cleaning_ && dzTrg_cleaning_ > 0))
-          continue;
-        skipTrack=false;
         drTrg = reco::deltaR(trk, mu);
         dzTrg = trk.vz() - mu.vz();
-        break; // at least for one trg muon to pass this cuts
+
+        if (fabs(dzTrg) < dzTrg_cleaning_){
+          skipTrack = false;
+          break;
+        }
       }
-      // if track is closer to at least a triggering muon keep it
       if (skipTrack) continue;
     }
+
 
     // high purity requirement applied only in packedCands
     if( do_trk_highpurity_ && iTrk < nTracks && !trk.trackHighPurity()) continue;
