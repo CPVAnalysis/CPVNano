@@ -16,8 +16,7 @@ muonTrgSelector = cms.EDProducer("MuonTriggerSelector",
                                  beamSpot = cms.InputTag("offlineBeamSpot"),
 
                                  # trigger muon matching conditions
-                                 #TODO keep these cuts? BPHNano: dR=0.3, and no dPt
-                                 max_deltaR_trigger_matching = cms.double(0.05),
+                                 max_deltaR_trigger_matching = cms.double(0.03),
                                  max_deltaPtRel_trigger_matching = cms.double(0.1),
                                  
                                  # selection for the selected and trigger muon
