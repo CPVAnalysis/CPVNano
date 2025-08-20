@@ -10,6 +10,7 @@
 #include "TrackingTools/TransientTrack/interface/TransientTrack.h"
 #include "DataFormats/GeometryVector/interface/PV3DBase.h"
 #include "Math/LorentzVector.h"
+#include "TLorentzVector.h"
 
 #include "TrackingTools/GeomPropagators/interface/AnalyticalImpactPointExtrapolator.h"
 #include "RecoVertex/KinematicFitPrimitives/interface/RefCountedKinematicTree.h"
@@ -55,6 +56,60 @@ inline double cos_theta_2D(const FITTER& fitter, const reco::BeamSpot &bs, const
   double den = (delta.R() * pt.R());
   return (den != 0.) ? delta.Dot(pt)/den : -2;
 }
+
+
+inline float compute_helicity_angle_cos_theta(TLorentzVector particleA, TLorentzVector particleB, TLorentzVector mother){
+   TVector3 boost = -(particleA + particleB).BoostVector();
+
+   particleA.Boost(boost);
+   mother.Boost(boost);
+
+   TVector3 pparticle = particleA.Vect();
+   TVector3 pmother = mother.Vect();
+
+   Float_t numerator = pparticle.Dot(pmother);
+   Float_t denominator = (pparticle.Mag())*(pmother.Mag());
+
+   Float_t cos_theta = numerator / denominator;
+
+   return cos_theta;
+ }
+
+
+inline float compute_helicity_angle_phi_star(TLorentzVector particleA1, TLorentzVector particleA2, TLorentzVector particleB1, TLorentzVector particleB2){
+     TLorentzVector particleA = particleA1 + particleA2;
+     TLorentzVector particleB = particleB1 + particleB2;
+
+     TVector3 boost = -(particleA + particleB).BoostVector();
+     particleA1.Boost(boost);
+     particleA2.Boost(boost);
+     particleB1.Boost(boost);
+     particleB2.Boost(boost);
+
+     // define vectors
+     TVector3 particleA1vect = particleA1.Vect();
+     TVector3 particleA2vect = particleA2.Vect();
+     TVector3 particleB1vect = particleB1.Vect();
+     TVector3 particleB2vect = particleB2.Vect();
+     TVector3 particleAvect = particleA.Vect();
+
+     // get plan normal unit vertors
+     TVector3 n1 = (particleA1.Vect().Cross(particleA2.Vect())).Unit();
+     TVector3 n2 = (particleB1.Vect().Cross(particleB2.Vect())).Unit();
+
+     // Vector along particleA direction
+     TVector3 z = particleA.Vect().Unit();
+
+     // Compute the angle between decay planes
+     float cos_phi = n1.Dot(n2);
+     float phi_star = acos(cos_phi);  // value in [0, pi]
+
+     // Determine the sign to have the angle in [-pi, pi]
+     float sign = z.Dot(n1.Cross(n2)) > 0 ? +1 : -1;
+     phi_star *= sign;
+
+     return phi_star; 
+ }
 
 template<typename FITTER>
 inline Measurement1D l_xy(const FITTER& fitter, const reco::BeamSpot &bs) {

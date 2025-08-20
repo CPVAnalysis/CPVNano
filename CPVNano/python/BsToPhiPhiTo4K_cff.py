@@ -13,33 +13,31 @@ PhiToKK = cms.EDProducer(
     k1_selection = cms.string(''), #cms.string('pt > 1.5'),
     k2_selection = cms.string(''),
 
+    #pre_vtx_selection_phi = cms.string(' && '.join([
+    #        'abs(mass-1.0195)<0.05',
+    #        'userFloat("deltaR_prefit")<0.5',
+    #        'charge()==0',
+    #    ])
+    #),
+    #post_vtx_selection_phi = cms.string(' && '.join([
+    #        'abs(userFloat("phi_fitted_mass")-1.0195)<0.015',
+    #        'userFloat("phi_fitted_k1_pt")>0.8',
+    #        'userFloat("phi_fitted_k2_pt")>0.7',
+    #        'userFloat("deltaR_postfit")<0.25',
+    #        'userFloat("phi_sv_prob")>0.01',
+    #    ])
+    #),
+    # loose preselection
     pre_vtx_selection_phi = cms.string(' && '.join([
-            'abs(mass-1.0195)<0.05',
-            'userFloat("deltaR_prefit")<0.5',
+            'abs(mass-1.0195)<0.1',
             'charge()==0',
         ])
     ),
     post_vtx_selection_phi = cms.string(' && '.join([
-            'abs(userFloat("phi_fitted_mass")-1.0195)<0.015',
-            'userFloat("phi_fitted_k1_pt")>0.8',
-            'userFloat("phi_fitted_k2_pt")>0.7',
-            'userFloat("deltaR_postfit")<0.25',
-            'userFloat("phi_sv_prob")>0.01',
+            'abs(userFloat("phi_fitted_mass")-1.0195)<0.1',
+            'userFloat("phi_sv_prob")>1e-5',
         ])
     ),
-    #post_vtx_selection_phi = cms.string('abs(userFloat("phi_fitted_mass")-1.0195)<0.015 && userFloat("phi_fitted_k1_pt")>0.8 && userFloat("phi_fitted_k2_pt")>0.7 && userFloat("deltaR_postfit")<0.25 && userFloat("phi_sv_prob")>0.01 && userFloat("phi_cos_theta_2D")>0.85'),
-
-    # tight preselection
-    #pre_vtx_selection_phi = cms.string('userFloat("deltaR_prefit") < 0.3 && abs(mass-1.0195)<0.015'), #TODO add charge=0? sum/product of pt? mass range, deltaR?
-    #post_vtx_selection_phi = cms.string('userFloat("deltaR_postfit") < 0.2 && userFloat("phi_sv_prob") > 0.2 && userFloat("phi_fitted_k1_pt") > 1.5 && abs(userFloat("phi_fitted_k1_eta")) < 2 && userFloat("phi_k1_DCASig_corr") > 0.3 && userFloat("phi_fitted_k2_pt") > 1.2 && abs(userFloat("phi_fitted_k2_eta")) < 2 && userFloat("phi_k2_DCASig_corr") > 0.2 && userFloat("phi_fitted_pt") > 3.2 && abs(userFloat("phi_fitted_eta")) < 2 && userFloat("phi_cos_theta_2D")>0.99 && abs(userFloat("phi_fitted_mass")-1.0195)<0.008'),
-
-    # loose preselection
-    #pre_vtx_selection_phi = cms.string('abs(mass-1.0195)<0.03'), #TODO add charge=0? sum/product of pt? mass range, deltaR?
-    #post_vtx_selection_phi = cms.string('userFloat("phi_sv_prob") > 0.01 && userFloat("phi_cos_theta_2D")>0.9 && abs(userFloat("phi_fitted_mass")-1.0195)<0.01'),
-
-    # very loose preselection
-    #pre_vtx_selection_phi = cms.string('abs(mass-1.0195)<0.15'), #TODO add charge=0? sum/product of pt? mass range, deltaR?
-    #post_vtx_selection_phi = cms.string('userFloat("phi_sv_prob") > 1e-5 && userFloat("phi_cos_theta_2D")>0.85 && abs(userFloat("phi_fitted_mass")-1.0195)<0.1'),
 )
 
 PhiToKKMC = PhiToKK.clone( 
@@ -67,21 +65,27 @@ BsToPhiPhiTo4K = cms.EDProducer(
     #post_vtx_selection_Bs = cms.string('userFloat("Bs_sv_prob") > 0.001 && userFloat("Bs_cos_theta_2D")>0.9 && abs(userFloat("Bs_fitted_mass")-5.367)<0.3'),
 
     PV_selection = cms.string("!isFake && ndof > 4 && abs(z) <= 24 && position.Rho <= 2"),
-    pre_vtx_selection_Bs = cms.string('abs(mass-5.367)<3'),
+    pre_vtx_selection_Bs = cms.string('abs(mass-5.367)<3'), #TODO tighten?
+    #post_vtx_selection_Bs = cms.string(' && '.join([
+    #    'abs(userFloat("phi1_fitted_mass") - 1.0195) < 0.012', 
+    #    'abs(userFloat("phi2_fitted_mass") - 1.0195) < 0.012', 
+    #    'userFloat("phi1_fitted_pt") > 2.5',
+    #    'userFloat("phi2_fitted_pt") > 1.8', 
+    #    '(userFloat("phi1_fitted_pt") * userFloat("phi1_fitted_pt")) > 6',
+    #    'userFloat("Bs_fitted_pt") > 1.5',
+    #    'abs(userFloat("Bs_fitted_eta")) < 2.5',
+    #    'userFloat("deltaR_min") < 0.15',
+    #    'userFloat("deltaR_max") < 2.5', 
+    #    #'userFloat("Bs_lxy_sig") > 1',
+    #    'userFloat("Bs_sv_prob") > 0.001', 
+    #    'abs(userFloat("Bs_fitted_mass")-5.367)<0.3',
+    #    #TODO add cut on ct? Both lower and upper cuts?
+    #    ])
+    #),
+    # loose preselection
     post_vtx_selection_Bs = cms.string(' && '.join([
-        'abs(userFloat("phi1_fitted_mass") - 1.0195) < 0.012', 
-        'abs(userFloat("phi2_fitted_mass") - 1.0195) < 0.012', 
-        'userFloat("phi1_fitted_pt") > 2.5',
-        'userFloat("phi2_fitted_pt") > 1.8', 
-        '(userFloat("phi1_fitted_pt") * userFloat("phi1_fitted_pt")) > 6',
-        'userFloat("Bs_fitted_pt") > 1.5',
-        'abs(userFloat("Bs_fitted_eta")) < 2.5',
-        'userFloat("deltaR_min") < 0.15',
-        'userFloat("deltaR_max") < 2.5', 
-        #'userFloat("Bs_lxy_sig") > 1',
-        'userFloat("Bs_sv_prob") > 0.001', 
+        'userFloat("Bs_sv_prob") > 1e-5', 
         'abs(userFloat("Bs_fitted_mass")-5.367)<0.3',
-        #TODO add cut on ct? Both lower and upper cuts?
         ])
     ),
         
@@ -214,16 +218,16 @@ PhiToKKTable = cms.EDProducer(
         deltaR_postfit = ufloat('deltaR_postfit'),
         cos_theta_star_k1 = ufloat('cos_theta_star_k1'),
         cos_theta_star_k2 = ufloat('cos_theta_star_k2'),
-        #energy_diff_phi_daughters_lab = ufloat('energy_diff_phi_daughters_lab'),
-        px_diff_phi_daughters_lab = ufloat('px_diff_phi_daughters_lab'),
-        py_diff_phi_daughters_lab = ufloat('py_diff_phi_daughters_lab'),
-        pz_diff_phi_daughters_lab = ufloat('pz_diff_phi_daughters_lab'),
-        energy_diff_prefitphi_daughters_lab = ufloat('energy_diff_prefitphi_daughters_lab'),
-        px_diff_prefitphi_daughters_lab = ufloat('px_diff_prefitphi_daughters_lab'),
-        py_diff_prefitphi_daughters_lab = ufloat('py_diff_prefitphi_daughters_lab'),
-        pz_diff_prefitphi_daughters_lab = ufloat('pz_diff_prefitphi_daughters_lab'),
-        energy_diff_phi_daughters_cm = ufloat('energy_diff_phi_daughters_cm'),
-        p_daughters_cm = ufloat('p_daughters_cm'),
+        ##energy_diff_phi_daughters_lab = ufloat('energy_diff_phi_daughters_lab'),
+        #px_diff_phi_daughters_lab = ufloat('px_diff_phi_daughters_lab'),
+        #py_diff_phi_daughters_lab = ufloat('py_diff_phi_daughters_lab'),
+        #pz_diff_phi_daughters_lab = ufloat('pz_diff_phi_daughters_lab'),
+        #energy_diff_prefitphi_daughters_lab = ufloat('energy_diff_prefitphi_daughters_lab'),
+        #px_diff_prefitphi_daughters_lab = ufloat('px_diff_prefitphi_daughters_lab'),
+        #py_diff_prefitphi_daughters_lab = ufloat('py_diff_prefitphi_daughters_lab'),
+        #pz_diff_prefitphi_daughters_lab = ufloat('pz_diff_prefitphi_daughters_lab'),
+        #energy_diff_phi_daughters_cm = ufloat('energy_diff_phi_daughters_cm'),
+        #p_daughters_cm = ufloat('p_daughters_cm'),
         #lep_vzdiff = ufloat('lep_vzdiff'),
         isMatched = uint('isMatched'),
     )
@@ -330,6 +334,10 @@ BsToPhiPhiTo4KTable = cms.EDProducer(
         cos_theta_star_phi2 = ufloat('cos_theta_star_phi2'),
         Bs_beta = ufloat('Bs_beta'),
         Bs_gamma = ufloat('Bs_gamma'),
+
+        cos_theta_k1 = ufloat('cos_theta_k1'),
+        cos_theta_k3 = ufloat('cos_theta_k3'),
+        phi_star = ufloat('phi_star'),
 
         phi1_mass = ufloat('phi1_fitted_mass'),
         phi1_pt = ufloat('phi1_fitted_pt'),

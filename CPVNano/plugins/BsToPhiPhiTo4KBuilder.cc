@@ -486,7 +486,6 @@ void BsToPhiPhiTo4KBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSe
       float ct_2D_cm_posbsz = mass_Bs_PDG * (Lx_posbsz * Bs_fitted_px + Ly_posbsz * Bs_fitted_py) / (Bs_fitted_px * Bs_fitted_px + Bs_fitted_py * Bs_fitted_py);
       float ct_2D_cm_posbspv = mass_Bs_PDG * (Lx_posbspv * Bs_fitted_px + Ly_posbspv * Bs_fitted_py) / (Bs_fitted_px * Bs_fitted_px + Bs_fitted_py * Bs_fitted_py);
       float ct_2D_cm_posthepv = mass_Bs_PDG * (Lx_posthepv * Bs_fitted_px + Ly_posthepv * Bs_fitted_py) / (Bs_fitted_px * Bs_fitted_px + Bs_fitted_py * Bs_fitted_py);
-      float ct_3D_cm = Bs_lxy.value() / (beta * gamma);  // take lxy computed at zpos
 
       Bs_cand.addUserFloat("Bs_lx", Lx);
       Bs_cand.addUserFloat("Bs_ly", Ly);
@@ -500,8 +499,24 @@ void BsToPhiPhiTo4KBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSe
       Bs_cand.addUserFloat("Bs_ct_2D_cm_posbsz", ct_2D_cm_posbsz);
       Bs_cand.addUserFloat("Bs_ct_2D_cm_posbspv", ct_2D_cm_posbspv);
       Bs_cand.addUserFloat("Bs_ct_2D_cm_posthepv", ct_2D_cm_posthepv);
-      Bs_cand.addUserFloat("Bs_ct_3D_cm", ct_3D_cm);
-       
+
+      // compute helicity angles
+      //  -- cos(theta) --
+      TLorentzVector k1_4vec(fitter_Bs.daughter_p4(0).px(), fitter_Bs.daughter_p4(0).py(), fitter_Bs.daughter_p4(0).pz(), fitter_Bs.daughter_p4(0).E());
+      TLorentzVector k2_4vec(fitter_Bs.daughter_p4(1).px(), fitter_Bs.daughter_p4(1).py(), fitter_Bs.daughter_p4(1).pz(), fitter_Bs.daughter_p4(1).E());
+      TLorentzVector k3_4vec(fitter_Bs.daughter_p4(2).px(), fitter_Bs.daughter_p4(2).py(), fitter_Bs.daughter_p4(2).pz(), fitter_Bs.daughter_p4(2).E());
+      TLorentzVector k4_4vec(fitter_Bs.daughter_p4(3).px(), fitter_Bs.daughter_p4(3).py(), fitter_Bs.daughter_p4(3).pz(), fitter_Bs.daughter_p4(3).E());
+      TLorentzVector Bs_4vec(fit_p4.px(), fit_p4.py(), fit_p4.pz(), fit_p4.E());
+      float cos_theta_k1 = compute_helicity_angle_cos_theta(k1_4vec, k2_4vec, Bs_4vec);
+      float cos_theta_k3 = compute_helicity_angle_cos_theta(k3_4vec, k4_4vec, Bs_4vec);
+
+      Bs_cand.addUserFloat("cos_theta_k1", cos_theta_k1);
+      Bs_cand.addUserFloat("cos_theta_k3", cos_theta_k3);
+      
+      //  -- phi* --
+      float phi_star = compute_helicity_angle_phi_star(k1_4vec, k2_4vec, k3_4vec, k4_4vec);
+      Bs_cand.addUserFloat("phi_star", phi_star);
+
       // gen-matching (for MC only)
       int isMatched = 0;
       //int k1_isMatched(-1), k2_isMatched(-1), k3_isMatched(-1), k4_isMatched(-1);
