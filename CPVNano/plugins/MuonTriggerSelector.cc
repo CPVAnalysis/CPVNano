@@ -326,6 +326,7 @@ void MuonTriggerSelector::produce(edm::Event& iEvent, const edm::EventSetup& iSe
       selmuons_out->back().addUserFloat("dzS", slimmed_muon.dB(slimmed_muon.PVDZ)/slimmed_muon.edB(slimmed_muon.PVDZ));
       selmuons_out->back().addUserFloat("dxy", slimmed_muon.dB(slimmed_muon.PV2D));
       selmuons_out->back().addUserFloat("dxyS", slimmed_muon.dB(slimmed_muon.PV2D)/slimmed_muon.edB(slimmed_muon.PV2D));
+      selmuons_out->back().addUserInt("softID", slimmed_muon.reco::Muon::passed(reco::Muon::SoftCutBasedId));
 
       // check if at least one triggering muon in the event
       //if(muonIsTriggerBPark[iMuo]){

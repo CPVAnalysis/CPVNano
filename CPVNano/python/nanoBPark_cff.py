@@ -18,6 +18,7 @@ from PhysicsTools.CPVNano.tracksBPark_cff import *
 
 ## B collections
 from PhysicsTools.CPVNano.BsToPhiPhiTo4K_cff import *
+from PhysicsTools.CPVNano.TagAndProbeJPsiToMuMu_cff import *
 
 
 vertexTable.svSrc = cms.InputTag("slimmedSecondaryVertices")
@@ -60,6 +61,13 @@ def nanoAOD_customizeBsToPhiPhiTo4K(process, isMC=False):
       process.nanoBsToPhiPhiTo4KSequence = cms.Sequence( PhiToKKSequence + BsToPhiPhiTo4KSequence + PhiToKKTable + BsToPhiPhiTo4KTable + CountPhiToKK)
     else:
       process.nanoBsToPhiPhiTo4KSequence = cms.Sequence( PhiToKKSequenceMC + BsToPhiPhiTo4KSequenceMC + PhiToKKTable + BsToPhiPhiTo4KTable )
+    return process
+
+def nanoAOD_customizeTagAndProbeJPsiToMuMu(process, isMC=False):
+    if isMC == False:
+      process.nanoJPsiToMuMuSequence = cms.Sequence( JPsiToMuMuSequence + JPsiToMuMuTable )
+    else:
+      process.nanoJPsiToMuMuSequence = cms.Sequence( JPsiToMuMuSequenceMC + JPsiToMuMuTable )
     return process
 
 from FWCore.ParameterSet.MassReplace import massSearchReplaceAnyInputTag

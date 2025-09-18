@@ -21,7 +21,7 @@ muonTrgSelector = cms.EDProducer("MuonTriggerSelector",
                                  
                                  # selection for the selected and trigger muon
                                  selmu_ptMin = cms.double(5.8),
-                                 selmu_absEtaMax = cms.double(1.55),
+                                 selmu_absEtaMax = cms.double(2.5), # increased for tag and probe study
                                  HLTPaths=cms.vstring(Path),
                              )
 #cuts minimun number in B both mu and e, min number of trg, dz muon, dz and dr track, 
@@ -68,7 +68,7 @@ muonBParkTable = cms.EDProducer("SimplePATMuonFlatTableProducer",
         looseID = Var("isLooseMuon()", int, doc="reco muon is Loose"),
         mediumID = Var("passed('CutBasedIdMedium')", bool, doc="cut-based ID, medium WP"),
         tightID = Var("passed('CutBasedIdTight')", bool, doc="cut-based ID, tight WP"),
-        softID = Var("passed('SoftCutBasedId')", bool, doc="soft cut-based ID"),
+        softID = Var("userInt('softID')", bool, doc="soft cut-based ID"),
 
         isPF = Var("isPFMuon()", int, doc="muon is PF candidate"),
         isGlobalMuon = Var("isGlobalMuon()", int, doc="muon is global muon"),
