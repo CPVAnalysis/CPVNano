@@ -1,8 +1,14 @@
 import FWCore.ParameterSet.Config as cms
 from PhysicsTools.NanoAOD.common_cff import *
 
-#FIXME add lines for 2022 and 2024
-Path=["HLT_Mu7_IP4", "HLT_Mu8_IP6", "HLT_Mu8_IP5", "HLT_Mu8_IP3", "HLT_Mu8p5_IP3p5", "HLT_Mu9_IP6", "HLT_Mu9_IP5", "HLT_Mu9_IP4", "HLT_Mu10p5_IP3p5", "HLT_Mu12_IP6"]
+Path = [
+    # 2018
+    "HLT_Mu7_IP4", "HLT_Mu8_IP6", "HLT_Mu8_IP5", "HLT_Mu8_IP3", "HLT_Mu8p5_IP3p5", "HLT_Mu9_IP6", "HLT_Mu9_IP5", "HLT_Mu9_IP4", "HLT_Mu10p5_IP3p5", 
+    # 2018 and 2022
+    "HLT_Mu12_IP6", 
+    # 2024
+    "HLT_Mu6_Barrel_L1HP7_IP6", "HLT_Mu7_Barrel_L1HP8_IP6", "HLT_Mu8_Barrel_L1HP9_IP6", "HLT_Mu9_Barrel_L1HP10_IP6", "HLT_Mu10_Barrel_L1HP11_IP6", 
+    ]
 
 muonTrgSelector = cms.EDProducer("MuonTriggerSelector",
                                  muonCollection = cms.InputTag("slimmedMuons"), #same collection as in NanoAOD                                                           
@@ -89,10 +95,8 @@ muonBParkTable = cms.EDProducer("SimplePATMuonFlatTableProducer",
         numberOfStations = Var("userInt('nStations')", int, doc = "number of matched stations with default arbitration (segment & track)"),
 
         isTriggering = Var("userInt('isTriggering')", int, doc="flag the reco muon is also triggering"),
-        isTriggeringBPark = Var("userInt('isTriggeringBPark')", int, doc="flag the reco muon is also triggering (only for BPark lines)"),
         matched_dr = Var("userFloat('DR')", float, doc="dr with the matched triggering muon" ),
         matched_dpt = Var("userFloat('DPT')", float, doc="dpt/pt with the matched triggering muon" ),   
-        #TODO add Run 3 trigger lines
         fired_HLT_Mu7_IP4 = Var("userInt('HLT_Mu7_IP4')", int, doc="reco muon fired this trigger"),
         fired_HLT_Mu8_IP6 = Var("userInt('HLT_Mu8_IP6')", int, doc="reco muon fired this trigger"),
         fired_HLT_Mu8_IP5 = Var("userInt('HLT_Mu8_IP5')", int, doc="reco muon fired this trigger"),
@@ -103,6 +107,11 @@ muonBParkTable = cms.EDProducer("SimplePATMuonFlatTableProducer",
         fired_HLT_Mu9_IP4 = Var("userInt('HLT_Mu9_IP4')", int, doc="reco muon fired this trigger"),
         fired_HLT_Mu10p5_IP3p5 = Var("userInt('HLT_Mu10p5_IP3p5')", int, doc="reco muon fired this trigger"),
         fired_HLT_Mu12_IP6 = Var("userInt('HLT_Mu12_IP6')", int, doc="reco muon fired this trigger"),
+        fired_HLT_Mu6_Barrel_L1HP7_IP6 = Var("userInt('HLT_Mu6_Barrel_L1HP7_IP6')", int, doc="reco muon fired this trigger"),
+        fired_HLT_Mu7_Barrel_L1HP8_IP6 = Var("userInt('HLT_Mu7_Barrel_L1HP8_IP6')", int, doc="reco muon fired this trigger"),
+        fired_HLT_Mu8_Barrel_L1HP9_IP6 = Var("userInt('HLT_Mu8_Barrel_L1HP9_IP6')", int, doc="reco muon fired this trigger"),
+        fired_HLT_Mu9_Barrel_L1HP10_IP6 = Var("userInt('HLT_Mu9_Barrel_L1HP10_IP6')", int, doc="reco muon fired this trigger"),
+        fired_HLT_Mu10_Barrel_L1HP11_IP6 = Var("userInt('HLT_Mu10_Barrel_L1HP11_IP6')", int, doc="reco muon fired this trigger"),
         prescale_HLT_Mu7_IP4 = Var("userInt('HLT_Mu7_IP4_prescale')", int, doc="reco muon prescale this trigger"),
         prescale_HLT_Mu8_IP6 = Var("userInt('HLT_Mu8_IP6_prescale')", int, doc="reco muon prescale this trigger"),
         prescale_HLT_Mu8_IP5 = Var("userInt('HLT_Mu8_IP5_prescale')", int, doc="reco muon prescale this trigger"),
@@ -113,6 +122,11 @@ muonBParkTable = cms.EDProducer("SimplePATMuonFlatTableProducer",
         prescale_HLT_Mu9_IP4 = Var("userInt('HLT_Mu9_IP4_prescale')", int, doc="reco muon prescale this trigger"),
         prescale_HLT_Mu10p5_IP3p5 = Var("userInt('HLT_Mu10p5_IP3p5_prescale')", int, doc="reco muon prescale this trigger"),
         prescale_HLT_Mu12_IP6 = Var("userInt('HLT_Mu12_IP6_prescale')", int, doc="reco muon prescale this trigger"),
+        prescale_HLT_Mu6_Barrel_L1HP7_IP6 = Var("userInt('HLT_Mu6_Barrel_L1HP7_IP6_prescale')", int, doc="reco muon prescale this trigger"),
+        prescale_HLT_Mu7_Barrel_L1HP8_IP6 = Var("userInt('HLT_Mu7_Barrel_L1HP8_IP6_prescale')", int, doc="reco muon prescale this trigger"),
+        prescale_HLT_Mu8_Barrel_L1HP9_IP6 = Var("userInt('HLT_Mu8_Barrel_L1HP9_IP6_prescale')", int, doc="reco muon prescale this trigger"),
+        prescale_HLT_Mu9_Barrel_L1HP10_IP6 = Var("userInt('HLT_Mu9_Barrel_L1HP10_IP6_prescale')", int, doc="reco muon prescale this trigger"),
+        prescale_HLT_Mu10_Barrel_L1HP11_IP6 = Var("userInt('HLT_Mu10_Barrel_L1HP11_IP6_prescale')", int, doc="reco muon prescale this trigger"),
     ),
 )
 

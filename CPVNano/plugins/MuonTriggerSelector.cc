@@ -137,7 +137,6 @@ void MuonTriggerSelector::produce(edm::Event& iEvent, const edm::EventSetup& iSe
     const reco::BeamSpot& beamSpot = *beamSpotHandle;
 
     std::vector<int> muonIsTrigger(slimmed_muons->size(), 0);
-    std::vector<int> muonIsTriggerBPark(slimmed_muons->size(), 0);
     std::vector<float> muonDR(slimmed_muons->size(),10000.);
     std::vector<float> muonDPT(slimmed_muons->size(),10000.);
     std::vector<int> loose_id(slimmed_muons->size(),0);
@@ -253,9 +252,6 @@ void MuonTriggerSelector::produce(edm::Event& iEvent, const edm::EventSetup& iSe
             }
             if(matcher[iMuo][path]!=1000. && DR[iMuo][path]<max_deltaR_trigger_matching_ && fabs(DPT[iMuo][path])<max_deltaPtRel_trigger_matching_ && DR[iMuo][path]!=10000){
               muonIsTrigger[iMuo]=1;
-              // BParking trigger lines correspond to the 10 first element (0 to 9) of the HLTPaths vector
-              //FIXME
-              if(path < 10) muonIsTriggerBPark[iMuo]=1;
               muonDR[iMuo]=DR[iMuo][path];
               muonDPT[iMuo]=DPT[iMuo][path];                
               
@@ -274,17 +270,14 @@ void MuonTriggerSelector::produce(edm::Event& iEvent, const edm::EventSetup& iSe
     }
 
     if(debug)std::cout << "number of Muons=" <<slimmed_muons->size() << endl;
-    // And now create a collection with trg muons from bParking line (10 first elements of HLTPaths)
+    // And now create a collection with trg muons from bParking line
     for(const pat::Muon & muon : *slimmed_muons){
         unsigned int iMuo(&muon -&(slimmed_muons->at(0)));
 
         if(muon.pt()<selmu_ptMin_) continue;
         if(fabs(muon.eta())>selmu_absEtaMax_) continue;
 
-        //FIXME this is only valid for 2018
-        if(muonIsTrigger[iMuo]==1 && (fires[iMuo][0]==1 || fires[iMuo][1]==1 || fires[iMuo][2]==1 || 
-          fires[iMuo][3]==1 || fires[iMuo][4]==1 || fires[iMuo][5]==1 || fires[iMuo][6]==1 || 
-          fires[iMuo][7]==1 || fires[iMuo][8]==1 || fires[iMuo][9]==1)){
+        if(muonIsTrigger[iMuo]==1){ 
             pat::Muon recoTriggerMuonCand(muon);
             trgmuons_out->emplace_back(recoTriggerMuonCand);
         }
@@ -316,7 +309,6 @@ void MuonTriggerSelector::produce(edm::Event& iEvent, const edm::EventSetup& iSe
         selmuons_out->back().addUserInt(HLTPaths_[i] + "_prescale", prescales[iMuo][i]);
       }
       selmuons_out->back().addUserInt("isTriggering", muonIsTrigger[iMuo]);
-      selmuons_out->back().addUserInt("isTriggeringBPark", muonIsTriggerBPark[iMuo]);
       selmuons_out->back().addUserFloat("DR", muonDR[iMuo]);
       selmuons_out->back().addUserFloat("DPT" ,muonDPT[iMuo]);
 
@@ -327,11 +319,6 @@ void MuonTriggerSelector::produce(edm::Event& iEvent, const edm::EventSetup& iSe
       selmuons_out->back().addUserFloat("dxy", slimmed_muon.dB(slimmed_muon.PV2D));
       selmuons_out->back().addUserFloat("dxyS", slimmed_muon.dB(slimmed_muon.PV2D)/slimmed_muon.edB(slimmed_muon.PV2D));
       selmuons_out->back().addUserInt("softID", slimmed_muon.reco::Muon::passed(reco::Muon::SoftCutBasedId));
-
-      // check if at least one triggering muon in the event
-      //if(muonIsTriggerBPark[iMuo]){
-      //   at_least_one_triggering_muon = 1;
-      //}
 
       // computing the IP with respect to the beamspot
       // first, a la R(D*)
