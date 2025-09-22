@@ -13,31 +13,31 @@ PhiToKK = cms.EDProducer(
     k1_selection = cms.string(''), #cms.string('pt > 1.5'),
     k2_selection = cms.string(''),
 
-    #pre_vtx_selection_phi = cms.string(' && '.join([
-    #        'abs(mass-1.0195)<0.05',
-    #        'userFloat("deltaR_prefit")<0.5',
-    #        'charge()==0',
-    #    ])
-    #),
-    #post_vtx_selection_phi = cms.string(' && '.join([
-    #        'abs(userFloat("phi_fitted_mass")-1.0195)<0.015',
-    #        'userFloat("phi_fitted_k1_pt")>0.8',
-    #        'userFloat("phi_fitted_k2_pt")>0.7',
-    #        'userFloat("deltaR_postfit")<0.25',
-    #        'userFloat("phi_sv_prob")>0.01',
-    #    ])
-    #),
-    # loose preselection
     pre_vtx_selection_phi = cms.string(' && '.join([
-            'abs(mass-1.0195)<0.1',
+            'abs(mass-1.0195)<0.045',
+            'userFloat("deltaR_prefit")<0.5',
             'charge()==0',
         ])
     ),
     post_vtx_selection_phi = cms.string(' && '.join([
-            'abs(userFloat("phi_fitted_mass")-1.0195)<0.1',
-            'userFloat("phi_sv_prob")>1e-5',
+            'abs(userFloat("phi_fitted_mass")-1.0195)<0.015',
+            'userFloat("phi_fitted_k1_pt")>0.8',
+            'userFloat("phi_fitted_k2_pt")>0.7',
+            'userFloat("deltaR_postfit")<0.25',
+            'userFloat("phi_sv_prob")>0.01',
         ])
     ),
+    # loose preselection
+    #pre_vtx_selection_phi = cms.string(' && '.join([
+    #        'abs(mass-1.0195)<0.1',
+    #        'charge()==0',
+    #    ])
+    #),
+    #post_vtx_selection_phi = cms.string(' && '.join([
+    #        'abs(userFloat("phi_fitted_mass")-1.0195)<0.1',
+    #        'userFloat("phi_sv_prob")>1e-5',
+    #    ])
+    #),
 )
 
 PhiToKKMC = PhiToKK.clone( 
@@ -65,29 +65,30 @@ BsToPhiPhiTo4K = cms.EDProducer(
     #post_vtx_selection_Bs = cms.string('userFloat("Bs_sv_prob") > 0.001 && userFloat("Bs_cos_theta_2D")>0.9 && abs(userFloat("Bs_fitted_mass")-5.367)<0.3'),
 
     PV_selection = cms.string("!isFake && ndof > 4 && abs(z) <= 24 && position.Rho <= 2"),
-    pre_vtx_selection_Bs = cms.string('abs(mass-5.367)<3'), #TODO tighten?
-    #post_vtx_selection_Bs = cms.string(' && '.join([
-    #    'abs(userFloat("phi1_fitted_mass") - 1.0195) < 0.012', 
-    #    'abs(userFloat("phi2_fitted_mass") - 1.0195) < 0.012', 
-    #    'userFloat("phi1_fitted_pt") > 2.5',
-    #    'userFloat("phi2_fitted_pt") > 1.8', 
-    #    '(userFloat("phi1_fitted_pt") * userFloat("phi1_fitted_pt")) > 6',
-    #    'userFloat("Bs_fitted_pt") > 1.5',
-    #    'abs(userFloat("Bs_fitted_eta")) < 2.5',
-    #    'userFloat("deltaR_min") < 0.15',
-    #    'userFloat("deltaR_max") < 2.5', 
-    #    #'userFloat("Bs_lxy_sig") > 1',
-    #    'userFloat("Bs_sv_prob") > 0.001', 
-    #    'abs(userFloat("Bs_fitted_mass")-5.367)<0.3',
-    #    #TODO add cut on ct? Both lower and upper cuts?
-    #    ])
-    #),
-    # loose preselection
+    pre_vtx_selection_Bs = cms.string('abs(mass-5.367)<0.9'), #TODO tighten?
     post_vtx_selection_Bs = cms.string(' && '.join([
-        'userFloat("Bs_sv_prob") > 1e-5', 
+        'abs(userFloat("phi1_fitted_mass") - 1.0195) < 0.012', 
+        'abs(userFloat("phi2_fitted_mass") - 1.0195) < 0.012', 
+        'userFloat("phi1_fitted_pt") > 2.5',
+        'userFloat("phi2_fitted_pt") > 1.8', 
+        '(userFloat("phi1_fitted_pt") * userFloat("phi1_fitted_pt")) > 6',
+        'userFloat("Bs_fitted_pt") > 1.5',
+        'abs(userFloat("Bs_fitted_eta")) < 2.5',
+        'userFloat("deltaR_min") < 0.15',
+        'userFloat("deltaR_max") < 2.5', 
+        #'userFloat("Bs_lxy_sig") > 1',
+        'userFloat("Bs_sv_prob") > 0.001', 
         'abs(userFloat("Bs_fitted_mass")-5.367)<0.3',
+        #TODO add cut on ct? Both lower and upper cuts?
         ])
     ),
+
+    # loose preselection
+    #post_vtx_selection_Bs = cms.string(' && '.join([
+    #    'userFloat("Bs_sv_prob") > 1e-5', 
+    #    'abs(userFloat("Bs_fitted_mass")-5.367)<0.3',
+    #    ])
+    #),
         
     # loose preselection
     #pre_vtx_selection_Bs = cms.string('abs(mass-5.367)<3'),
