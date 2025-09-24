@@ -21,6 +21,7 @@ def getOptions():
   parser.add_argument('--dotageprobe'       , dest='dotageprobe' , help='run the JpsiToMuMu process (tag and probe study)'               , action='store_true', default=False)
   parser.add_argument('--dogeneral'         , dest='dogeneral'   , help='run without process'                                            , action='store_true', default=False)
   parser.add_argument('--docondor'          , dest='docondor'    , help='submit job on HTCondor'                                         , action='store_true', default=False)
+  parser.add_argument('--dosubmit'          , dest='dosubmit'    , help='submit the jobs'                                                , action='store_true', default=False)
   return parser.parse_args()
   
 
@@ -34,16 +35,17 @@ def checkParser(opt):
 
 class NanoLauncher(object):
   def __init__(self, opt):
-    self.prodlabel = vars(opt)['pl']
-    self.year      = vars(opt)['year']
-    self.tagnano   = vars(opt)['tagnano']
-    self.ds        = vars(opt)['ds']
-    self.data      = vars(opt)['data']
-    self.mcprivate = vars(opt)['mcprivate']
+    self.prodlabel   = vars(opt)['pl']
+    self.year        = vars(opt)['year']
+    self.tagnano     = vars(opt)['tagnano']
+    self.ds          = vars(opt)['ds']
+    self.data        = vars(opt)['data']
+    self.mcprivate   = vars(opt)['mcprivate']
     self.dosignal    = vars(opt)["dosignal"]
     self.dotageprobe = vars(opt)["dotageprobe"]
     self.dogeneral   = vars(opt)["dogeneral"]
-    self.docondor  = vars(opt)['docondor']
+    self.docondor    = vars(opt)['docondor']
+    self.dosubmit    = vars(opt)["dosubmit"]
 
     self.user = os.environ["USER"]
     self.outfilename_nano = 'bparknano.root' if self.tagnano == None else 'bparknano_{}.root'.format(self.tagnano)
@@ -284,6 +286,8 @@ class NanoLauncher(object):
           )
 
     units_per_job = 3 # 10
+    max_time_min = 130
+    max_mem_MB = 2100
 
     config = [
       "from CRABClient.UserUtilities import config, ClientException",
@@ -321,8 +325,8 @@ class NanoLauncher(object):
       "config.JobType.inputFiles      = ['the_nano_config.py']", 
       "config.JobType.allowUndistributedCMSSW = True", 
       "config.JobType.outputFiles     = ['{}']".format(self.outfilename_nano), 
-      "config.JobType.maxMemoryMB = 2500",
-      "#config.JobType.maxJobRuntimeMin = 3000 #TODO add",
+      "config.JobType.maxMemoryMB = {}".format(max_mem_MB),
+      "config.JobType.maxJobRuntimeMin = {}".format(max_time_min),
 
       "config.section_('Site')",
       "config.Site.storageSite = 'T2_CH_CERN'",
@@ -459,8 +463,9 @@ class NanoLauncher(object):
         print('\n   -> Preparing CRAB config') 
         self.prepare_CRAB_config(key=key) 
 
-        print('\n   -> Submitting...') 
-        self.submit_crab()
+        if self.dosubmit:
+            print('\n   -> Submitting...') 
+            self.submit_crab()
 
         print('\n   -> Submission completed')
 
@@ -489,12 +494,14 @@ class NanoLauncher(object):
                     print('\n   -> Preparing condor config') 
                     self.prepare_condor_config(chunk_id=chunk_id)
 
-                    print('\n   -> Submitting...') 
-                    self.submit_condor()
+                    if self.dosubmit:
+                        print('\n   -> Submitting...') 
+                        self.submit_condor()
 
                 else:
-                    print('\n   -> Processing...') 
-                    self.submit_local()
+                    if self.dosubmit:
+                        print('\n   -> Processing...') 
+                        self.submit_local()
 
     print('\nDone')
 
