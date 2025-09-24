@@ -8,8 +8,6 @@ from bparkingdata_samples_2022 import bpark_samples_2022
 from bparkingdata_samples_2024 import bpark_samples_2024
 
 
-#TODO add TagAndProbe
-
 def getOptions():
   from argparse import ArgumentParser
   parser = ArgumentParser(description='Script to launch the nanoAOD tool on top of miniAOD files', add_help=True)
@@ -19,6 +17,9 @@ def getOptions():
   parser.add_argument('--tagnano' , type=str, dest='tagnano'     , help='[optional] tag to be added on the outputfile name of the nano sample'                , default=None)
   parser.add_argument('--data'              , dest='data'        , help='run the nano tool on a data sample'                             , action='store_true', default=False)
   parser.add_argument('--mcprivate'         , dest='mcprivate'   , help='run the BParking nano tool on a private MC sample'              , action='store_true', default=False)
+  parser.add_argument('--dosignal'          , dest='dosignal'    , help='run the BToMuMuPi process'                                      , action='store_true', default=False)
+  parser.add_argument('--dotageprobe'       , dest='dotageprobe' , help='run the JpsiToMuMu process (tag and probe study)'               , action='store_true', default=False)
+  parser.add_argument('--dogeneral'         , dest='dogeneral'   , help='run without process'                                            , action='store_true', default=False)
   parser.add_argument('--docondor'          , dest='docondor'    , help='submit job on HTCondor'                                         , action='store_true', default=False)
   return parser.parse_args()
   
@@ -26,6 +27,9 @@ def getOptions():
 def checkParser(opt):
   if opt.pl==None:
     raise RuntimeError('Please indicate the production label: for --mcprivate, it has to correspond to the label of the miniAOD')
+
+  if opt.dosignal==False and opt.dotageprobe==False and opt.dogeneral==False:
+    raise RuntimeError('Please indicate the process you want to run (--dosignal and/or --dotageprobe and/or --dogeneral)')
 
 
 class NanoLauncher(object):
@@ -36,6 +40,9 @@ class NanoLauncher(object):
     self.ds        = vars(opt)['ds']
     self.data      = vars(opt)['data']
     self.mcprivate = vars(opt)['mcprivate']
+    self.dosignal    = vars(opt)["dosignal"]
+    self.dotageprobe = vars(opt)["dotageprobe"]
+    self.dogeneral   = vars(opt)["dogeneral"]
     self.docondor  = vars(opt)['docondor']
 
     self.user = os.environ["USER"]
@@ -68,8 +75,9 @@ class NanoLauncher(object):
 
 
   def prepare_nano_config(self, chunk=None, chunk_id=0):
-    doSignal = 'True' 
-    doGeneral = 'False'
+    doSignal = 'True' if self.dosignal else 'False' 
+    doTagAndProbe = 'True' if self.dotageprobe else 'False'
+    doGeneral = 'True' if self.dogeneral else 'False'
     addTriggerMuonCollection = 'True'
     addProbeTracksCollection = 'True'
 
@@ -107,6 +115,7 @@ class NanoLauncher(object):
       "globaltag = '{}'".format(gt),
       "json_file = '{}'".format(json_file),
       "doSignal = {}".format(doSignal),
+      "doTagAndProbe = {}".format(doTagAndProbe),
       "doGeneral = {}".format(doGeneral),
       "addTriggerMuonCollection = cms.untracked.bool({})".format(addTriggerMuonCollection),
       "addProbeTracksCollection = cms.untracked.bool({})".format(addProbeTracksCollection),
@@ -190,9 +199,11 @@ class NanoLauncher(object):
       "process = nanoAOD_customizeMuonTriggerBPark      (process, addTriggerMuonCollection=addTriggerMuonCollection)",
       "process = nanoAOD_customizeTrackFilteredBPark    (process, addProbeTracksCollection=addProbeTracksCollection)",
       "process = nanoAOD_customizeBsToPhiPhiTo4K        (process, isMC=isMC)",
+      "process = nanoAOD_customizeTagAndProbeJPsiToMuMu (process, isMC=isMC)",
       "",
       "process.nanoAOD_general_step = cms.Path(process.nanoSequence)",
       "process.nanoAOD_BsToPhiPhiTo4K_step = cms.Path(process.nanoSequence + process.nanoBsToPhiPhiTo4KSequence + CountBsToPhiPhiTo4K)",
+      "process.nanoAOD_JPsiToMuMu_step  = cms.Path(process.nanoSequence + process.nanoJPsiToMuMuSequence + CountJPsiToMuMu)",
       "",
       "if isMC:",
       "    from PhysicsTools.CPVNano.nanoBPark_cff import nanoAOD_customizeMC",
@@ -212,6 +223,10 @@ class NanoLauncher(object):
       "  process.schedule += cms.Schedule(",
       "      process.nanoAOD_general_step,",
       "  )",
+      "if doTagAndProbe:",
+      "  process.schedule += cms.Schedule(",
+      "      process.nanoAOD_JPsiToMuMu_step,", 
+      "  )",
       "if doSignal:",
       "  process.schedule += cms.Schedule(",
       "      process.nanoAOD_BsToPhiPhiTo4K_step,",
@@ -228,6 +243,7 @@ class NanoLauncher(object):
       "process_string = cms.vstring()",
       "if doGeneral: process_string.append('nanoAOD_general_step')",
       "if doSignal: process_string.append('nanoAOD_BsToPhiPhiTo4K_step')",
+      "if doTagAndProbe: process_string.append('nanoAOD_JPsiToMuMu_step')",
       "",
       "process.NANOAODoutput.SelectEvents = cms.untracked.PSet(",
       "    SelectEvents = process_string",
