@@ -13,6 +13,7 @@
 #include "DataFormats/PatCandidates/interface/PackedCandidate.h"
 #include "CommonTools/Utils/interface/StringCutObjectSelector.h"
 #include "DataFormats/PatCandidates/interface/CompositeCandidate.h"
+#include "DataFormats/PatCandidates/interface/Muon.h"
 #include "DataFormats/Math/interface/deltaR.h"
 #include "CommonTools/Statistics/interface/ChiSquaredProbability.h"
 #include "TrackingTools/TransientTrack/interface/TransientTrack.h"
@@ -27,27 +28,17 @@ class BsToPhiPhiTo4KBuilder : public edm::global::EDProducer<> {
 
 public:
   typedef std::vector<reco::TransientTrack> TransientTrackCollection;
+  typedef std::vector<pat::Muon> MuonCollection;
 
   explicit BsToPhiPhiTo4KBuilder(const edm::ParameterSet &cfg):
     // phi candidates
-    Bs_candidates_{consumes<pat::CompositeCandidateCollection>( cfg.getParameter<edm::InputTag>("phis") )},
-    kaon_ttracks_{consumes<TransientTrackCollection>( cfg.getParameter<edm::InputTag>("phisTransientTracks") )},
+    phi_candidates_{consumes<pat::CompositeCandidateCollection>( cfg.getParameter<edm::InputTag>("phis") )},
 
     // kaon tracks
-    //kaons_ {consumes<pat::CompositeCandidateCollection>(cfg.getParameter<edm::InputTag>("kaons"))},
-    //kaons_ttracks_ {consumes<TransientTrackCollection>(cfg.getParameter<edm::InputTag>("kaonsTransientTracks"))},
+    kaon_ttracks_{consumes<TransientTrackCollection>( cfg.getParameter<edm::InputTag>("kaonsTransientTracks") )},
 
-    // selection first phi candidate (phi_1)
-    //k1_selection_ {cfg.getParameter<std::string>("k1_selection")},
-    //k2_selection_ {cfg.getParameter<std::string>("k2_selection")},
-    //pre_vtx_selection_phi1_ {cfg.getParameter<std::string>("pre_vtx_selection_phi1")},
-    //post_vtx_selection_phi1_ {cfg.getParameter<std::string>("post_vtx_selection_phi1")},
-
-    // selection second phi candidate (phi_2)
-    //k3_selection_ {cfg.getParameter<std::string>("k3_selection")},
-    //k4_selection_ {cfg.getParameter<std::string>("k4_selection")},
-    //pre_vtx_selection_phi2_ {cfg.getParameter<std::string>("pre_vtx_selection_phi2")},
-    //post_vtx_selection_phi2_ {cfg.getParameter<std::string>("post_vtx_selection_phi2")},
+    // muons
+    muons_{consumes<MuonCollection>( cfg.getParameter<edm::InputTag>("muons") )},
 
     // selection PV
     PV_selection_ {cfg.getParameter<std::string>("PV_selection")},
@@ -56,6 +47,7 @@ public:
     pre_vtx_selection_Bs_ {cfg.getParameter<std::string>("pre_vtx_selection_Bs")},
     post_vtx_selection_Bs_ {cfg.getParameter<std::string>("post_vtx_selection_Bs")},
 
+    // for MC
     genParticles_ {consumes<reco::GenParticleCollection>(cfg.getParameter<edm::InputTag>("genParticles"))}, 
     isMC_ {cfg.getParameter<bool>("isMC")},
 
@@ -74,54 +66,29 @@ public:
   static void fillDescriptions(edm::ConfigurationDescriptions &descriptions) {}
   
 private:
-  // kaon tracks 
-  //const edm::EDGetTokenT<pat::CompositeCandidateCollection> kaons_;
-  //const edm::EDGetTokenT<TransientTrackCollection> kaons_ttracks_;
-  const edm::EDGetTokenT<pat::CompositeCandidateCollection> Bs_candidates_;
+  const edm::EDGetTokenT<pat::CompositeCandidateCollection> phi_candidates_;
   const edm::EDGetTokenT<TransientTrackCollection> kaon_ttracks_;
-
-  //// selection first phi candidate (phi_1)
-  //const StringCutObjectSelector<pat::CompositeCandidate> k1_selection_; 
-  //const StringCutObjectSelector<pat::CompositeCandidate> k2_selection_; 
-  //const StringCutObjectSelector<pat::CompositeCandidate> pre_vtx_selection_phi1_;
-  //const StringCutObjectSelector<pat::CompositeCandidate> post_vtx_selection_phi1_; 
-
-  //// selection second phi candidate (phi_2)
-  //const StringCutObjectSelector<pat::CompositeCandidate> k3_selection_; 
-  //const StringCutObjectSelector<pat::CompositeCandidate> k4_selection_; 
-  //const StringCutObjectSelector<pat::CompositeCandidate> pre_vtx_selection_phi2_;
-  //const StringCutObjectSelector<pat::CompositeCandidate> post_vtx_selection_phi2_; 
-    
-  // selection Bs candidate
+  const edm::EDGetTokenT<MuonCollection> muons_;
   const StringCutObjectSelector<reco::Vertex> PV_selection_;
   const StringCutObjectSelector<pat::CompositeCandidate> pre_vtx_selection_Bs_;
   const StringCutObjectSelector<pat::CompositeCandidate> post_vtx_selection_Bs_; 
-
   const edm::EDGetTokenT<reco::GenParticleCollection> genParticles_;
   const bool isMC_;
-
-  // vertices
   const edm::EDGetTokenT<reco::VertexCollection> vertexToken_;
-
-  // beamspot
   const edm::EDGetTokenT<reco::BeamSpot> beamspot_;  
 };
 
 void BsToPhiPhiTo4KBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const &) const {
 
-  //TODO study strategy for tag muon
-  
   // input
-  //edm::Handle<pat::CompositeCandidateCollection> kaons;
-  //evt.getByToken(kaons_, kaons);
+  edm::Handle<pat::CompositeCandidateCollection> phi_candidates;
+  evt.getByToken(phi_candidates_, phi_candidates);
 
-  edm::Handle<pat::CompositeCandidateCollection> Bs_candidates;
-  evt.getByToken(Bs_candidates_, Bs_candidates);
-
-  //std::cout << "number oh phi candidates: " << Bs_candidates->size() << std::endl;
-  
   edm::Handle<TransientTrackCollection> kaon_ttracks;
   evt.getByToken(kaon_ttracks_, kaon_ttracks);
+
+  edm::Handle<MuonCollection> muons;
+  evt.getByToken(muons_, muons);
 
   edm::Handle<reco::GenParticleCollection> genParticles;
   evt.getByToken(genParticles_, genParticles);
@@ -134,16 +101,12 @@ void BsToPhiPhiTo4KBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSe
   edm::Handle<reco::BeamSpot> beamspot;
   evt.getByToken(beamspot_, beamspot);  
 
-  //std::cout << std::endl << std::endl << "start builder" << std::endl;
-
   // output
   std::unique_ptr<pat::CompositeCandidateCollection> ret_value(new pat::CompositeCandidateCollection());
 
-  //if(Bs_candidates->size() < 2) continue; // there must be at least two phi candidates to proceed
-  
   // loop on first phi candidate (phi1)
-  for(size_t phi1_idx = 0; phi1_idx < Bs_candidates->size(); ++phi1_idx) {
-    edm::Ptr<pat::CompositeCandidate> phi1_ptr(Bs_candidates, phi1_idx);
+  for(size_t phi1_idx = 0; phi1_idx < phi_candidates->size(); ++phi1_idx) {
+    edm::Ptr<pat::CompositeCandidate> phi1_ptr(phi_candidates, phi1_idx);
   
     //std::cout << "found first phi" << std::endl;
 
@@ -168,8 +131,8 @@ void BsToPhiPhiTo4KBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSe
     //  );
 
     // loop on second phi candidate (phi2)
-    for(size_t phi2_idx = phi1_idx + 1; phi2_idx < Bs_candidates->size(); ++phi2_idx) {
-      edm::Ptr<pat::CompositeCandidate> phi2_ptr(Bs_candidates, phi2_idx);
+    for(size_t phi2_idx = phi1_idx + 1; phi2_idx < phi_candidates->size(); ++phi2_idx) {
+      edm::Ptr<pat::CompositeCandidate> phi2_ptr(phi_candidates, phi2_idx);
 
       //std::cout << "found second phi" << std::endl;
         
@@ -271,9 +234,6 @@ void BsToPhiPhiTo4KBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSe
       Bs_cand.addUserFloat("Bs_sv_ndof", fitter_Bs.dof()); 
       Bs_cand.addUserFloat("Bs_sv_prob", fitter_Bs.prob());
 
-      //TODO add all quantities needed to compute boosts, angles, etc.
-      //TODO add ct and time
-
       auto fit_p4 = fitter_Bs.fitted_p4();
 
       float Bs_fitted_pt = fit_p4.pt();
@@ -323,7 +283,6 @@ void BsToPhiPhiTo4KBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSe
       auto phi1_p4 = k1_p4 + k2_p4;
       auto phi2_p4 = k3_p4 + k4_p4;
 
-      //TODO necessary to store this info, cannot be retrieved from PhiToKK collection?
       //TODO make sure that the index gymnastic with PhiToKK is sound
       // phi candidates
       std::vector<std::string> phi_names{"phi1", "phi2"};
@@ -343,7 +302,6 @@ void BsToPhiPhiTo4KBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSe
         Bs_cand.addUserFloat(phi_names[i] + "_fitted_eta", (fitter_Bs.daughter_p4(idx1) + fitter_Bs.daughter_p4(idx2)).eta());
         Bs_cand.addUserFloat(phi_names[i] + "_fitted_phi", (fitter_Bs.daughter_p4(idx1) + fitter_Bs.daughter_p4(idx2)).phi());
       }
-        // TODO get other quantities (sv_prob, cos2d, lxy, etc)
 
       // compute deltaR
       Bs_cand.addUserFloat("deltaR_phi1phi2", reco::deltaR(phi1_p4, phi2_p4));
@@ -359,9 +317,8 @@ void BsToPhiPhiTo4KBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSe
       Bs_cand.addUserFloat("deltaR_min", dr_info.first);
       Bs_cand.addUserFloat("deltaR_max", dr_info.second);
 
-
       // apply pots-fit selection
-      if(!post_vtx_selection_Bs_(Bs_cand)) continue; //TODO move to after definition of user floats?
+      if(!post_vtx_selection_Bs_(Bs_cand)) continue; 
 
       // compute invariant masses
       Bs_cand.addUserFloat("k1k3_mass", (k1_p4 + k3_p4).mass());
@@ -375,17 +332,6 @@ void BsToPhiPhiTo4KBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSe
       Bs_cand.addUserFloat("k2k4_pt", (k2_p4 + k4_p4).pt());
 
 
-      //TODO necessary to store this info, cannot be retrieved from PhiToKK collection?
-      // kaons
-      std::vector<std::string> kaon_names{"k1", "k2", "k3", "k4"};
-      
-      for (size_t i = 0; i < kaon_names.size(); i++){
-	      Bs_cand.addUserFloat(kaon_names[i] + "_fitted_mass" ,fitter_Bs.daughter_p4(i).mass());
-	      Bs_cand.addUserFloat(kaon_names[i] + "_fitted_pt" ,fitter_Bs.daughter_p4(i).pt());
-        Bs_cand.addUserFloat(kaon_names[i] + "_fitted_eta",fitter_Bs.daughter_p4(i).eta());
-        Bs_cand.addUserFloat(kaon_names[i] + "_fitted_phi",fitter_Bs.daughter_p4(i).phi());
-      }
-      
       // computation of cos(theta*), 
       // (angle between the Bs momentum direction in the lab frame and the daughter's momentum direction in the center of mass frame)
       float mass_Bs_fitted = fitter_Bs.fitted_candidate().mass();
@@ -500,6 +446,30 @@ void BsToPhiPhiTo4KBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSe
       Bs_cand.addUserFloat("Bs_ct_2D_cm_posbspv", ct_2D_cm_posbspv);
       Bs_cand.addUserFloat("Bs_ct_2D_cm_posthepv", ct_2D_cm_posthepv);
 
+      // kaons
+      std::vector<std::string> kaon_names{"k1", "k2", "k3", "k4"};
+
+      for (size_t i = 0; i < kaon_names.size(); i++){
+	      Bs_cand.addUserFloat(kaon_names[i] + "_fitted_mass" ,fitter_Bs.daughter_p4(i).mass());
+	      Bs_cand.addUserFloat(kaon_names[i] + "_fitted_pt" ,fitter_Bs.daughter_p4(i).pt());
+        Bs_cand.addUserFloat(kaon_names[i] + "_fitted_eta",fitter_Bs.daughter_p4(i).eta());
+        Bs_cand.addUserFloat(kaon_names[i] + "_fitted_phi",fitter_Bs.daughter_p4(i).phi());
+      }
+
+      // compute impact parameters with respect to best PV
+      std::vector<int> kaon_idx{k1_idx, k2_idx, k3_idx, k4_idx};
+      for (size_t i = 0; i < kaon_names.size(); i++){
+        Bs_cand.addUserFloat(kaon_names[i] + "_dxy", kaon_ttracks->at(kaon_idx[i]).track().dxy(the_PV.position())); 
+        Bs_cand.addUserFloat(kaon_names[i] + "_dxyS", kaon_ttracks->at(kaon_idx[i]).track().dxy(the_PV.position())/ kaon_ttracks->at(kaon_idx[i]).track().dxyError(the_PV.position(), the_PV.covariance())); 
+        Bs_cand.addUserFloat(kaon_names[i] + "_dz", kaon_ttracks->at(kaon_idx[i]).track().dz(the_PV.position())); 
+        Bs_cand.addUserFloat(kaon_names[i] + "_dzS", kaon_ttracks->at(kaon_idx[i]).track().dz(the_PV.position())/ kaon_ttracks->at(kaon_idx[i]).track().dzError()); 
+
+        float dcasig_pv_first = computeDCA(kaon_ttracks->at(kaon_idx[i]), *beamspot, the_PV).first;
+        float dcasig_pv_second = computeDCA(kaon_ttracks->at(kaon_idx[i]), *beamspot, the_PV).second;
+        float dcasig_pv = (dcasig_pv_second != 0 && float(dcasig_pv_second) == dcasig_pv_second) ? fabs(dcasig_pv_first/dcasig_pv_second) : -1;
+        Bs_cand.addUserFloat(kaon_names[i] + "_dcasig_pv", dcasig_pv); 
+      }
+
       // compute helicity angles
       //  -- cos(theta) --
       TLorentzVector k1_4vec(fitter_Bs.daughter_p4(0).px(), fitter_Bs.daughter_p4(0).py(), fitter_Bs.daughter_p4(0).pz(), fitter_Bs.daughter_p4(0).E());
@@ -516,6 +486,17 @@ void BsToPhiPhiTo4KBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSe
       //  -- phi* --
       float phi_star = compute_helicity_angle_phi_star(k1_4vec, k2_4vec, k3_4vec, k4_4vec);
       Bs_cand.addUserFloat("phi_star", phi_star);
+
+      // compute muon impact parameters with respect to best PV
+      for(size_t mu_idx = 0; mu_idx < muons->size(); ++mu_idx) {
+        edm::Ptr<pat::Muon> mu_ptr(muons, mu_idx);
+
+        Bs_cand.addUserFloat("trgmu_dxy", mu_ptr->bestTrack()->dxy(the_PV.position()));
+        Bs_cand.addUserFloat("trgmu_dxyS", mu_ptr->bestTrack()->dxy(the_PV.position()) / mu_ptr->bestTrack()->dxyError(the_PV.position(), the_PV.covariance()));
+        Bs_cand.addUserFloat("trgmu_dz", mu_ptr->bestTrack()->dz(the_PV.position()));
+        Bs_cand.addUserFloat("trgmu_dzS", mu_ptr->bestTrack()->dz(the_PV.position()) / mu_ptr->bestTrack()->dzError());
+      }
+      
 
       // gen-matching (for MC only)
       int isMatched = 0;

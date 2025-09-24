@@ -30,7 +30,6 @@ class TrackMerger : public edm::global::EDProducer<> {
 
 public:
 
-  //would it be useful to give this a bit more standard structure?
   explicit TrackMerger(const edm::ParameterSet &cfg):
     bFieldToken_(esConsumes<MagneticField, IdealMagneticFieldRecord>()),
     beamSpotSrc_(consumes<reco::BeamSpot>(cfg.getParameter<edm::InputTag>("beamSpot"))),
@@ -251,11 +250,10 @@ void TrackMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const 
     // IP computed wrt to PV ref, as in https://cmssdt.cern.ch/lxr/source/DataFormats/PatCandidates/interface/PackedCandidate.h?v=CMSSW_12_5_X_2022-08-01-2300&%21v=CMSSW_10_6_20
     // checked that it is compatible (avg e-3 accuracy) to the IP evaluated at the first PV
 
-    //FIXME call dz, dxy etc. at a given point! 
-    pcand.addUserFloat("dxy", trk.dxy());
-    pcand.addUserFloat("dxyS", trk.dxy()/trk.dxyError());
-    pcand.addUserFloat("dz", trk.dz()); 
-    pcand.addUserFloat("dzS", trk.dz()/trk.dzError());
+    pcand.addUserFloat("dxy", trk.bestTrack()->dxy(the_PV.position()));
+    pcand.addUserFloat("dxyS", trk.bestTrack()->dxy(the_PV.position())/trk.bestTrack()->dxyError(the_PV.position(), the_PV.covariance()));
+    pcand.addUserFloat("dz", trk.bestTrack()->dz(the_PV.position())); 
+    pcand.addUserFloat("dzS", trk.bestTrack()->dz(the_PV.position())/trk.bestTrack()->dzError());
     pcand.addUserFloat("DCASig", DCASig);
     pcand.addUserFloat("DCASig_corr", DCASig_corr);
 
