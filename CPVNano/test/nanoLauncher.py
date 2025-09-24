@@ -1,11 +1,14 @@
 import os
 import sys
 sys.path.append('../data/samples')
+from os import path
 from glob import glob
 from bparkingdata_samples_2018 import bpark_samples_2018
 from bparkingdata_samples_2022 import bpark_samples_2022
 from bparkingdata_samples_2024 import bpark_samples_2024
 
+
+#TODO add TagAndProbe
 
 def getOptions():
   from argparse import ArgumentParser
@@ -16,6 +19,7 @@ def getOptions():
   parser.add_argument('--tagnano' , type=str, dest='tagnano'     , help='[optional] tag to be added on the outputfile name of the nano sample'                , default=None)
   parser.add_argument('--data'              , dest='data'        , help='run the nano tool on a data sample'                             , action='store_true', default=False)
   parser.add_argument('--mcprivate'         , dest='mcprivate'   , help='run the BParking nano tool on a private MC sample'              , action='store_true', default=False)
+  parser.add_argument('--docondor'          , dest='docondor'    , help='submit job on HTCondor'                                         , action='store_true', default=False)
   return parser.parse_args()
   
 
@@ -32,6 +36,7 @@ class NanoLauncher(object):
     self.ds        = vars(opt)['ds']
     self.data      = vars(opt)['data']
     self.mcprivate = vars(opt)['mcprivate']
+    self.docondor  = vars(opt)['docondor']
 
     self.user = os.environ["USER"]
     self.outfilename_nano = 'bparknano.root' if self.tagnano == None else 'bparknano_{}.root'.format(self.tagnano)
@@ -62,11 +67,11 @@ class NanoLauncher(object):
       return chunk_id
 
 
-  def prepare_nano_config(self, chunk=None):
+  def prepare_nano_config(self, chunk=None, chunk_id=0):
     doSignal = 'True' 
     doGeneral = 'False'
     addTriggerMuonCollection = 'True'
-    addProbeTracksCollection = 'False'
+    addProbeTracksCollection = 'True'
 
     if self.data:
       isMC = 'False'
@@ -74,6 +79,14 @@ class NanoLauncher(object):
         json_file = 'https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions18/13TeV/ReReco/Cert_314472-325175_13TeV_17SeptEarlyReReco2018ABC_PromptEraD_Collisions18_JSON.txt'
         gt = '102X_dataRun2_v11'
         era = 'Run2_2018'
+      elif self.year == '2022':
+        json_file = 'https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions22/Cert_Collisions2022_355100_362760_Golden.json'
+        gt = '' # see https://docs.google.com/presentation/d/1F4ndU7DBcyvrEEyLfYqb29NGkBPs20EAnBxe_l7AEII/edit?slide=id.g289f499aa6b_2_52#slide=id.g289f499aa6b_2_52
+        era = ''
+      elif self.year == '2024':
+        json_file = 'https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions24/Cert_Collisions2024_378981_386951_Golden.json'
+        gt = '150X_dataRun3_v2'
+        era = 'Run3_2024'
       else:
         raise RuntimeError('Please insert GT, json and era for year {}'.format(self.year))
 
@@ -230,11 +243,16 @@ class NanoLauncher(object):
 
     config = '\n'.join(config)
 
-    f_out = open('the_nano_config.py', 'w+')
+    if self.data:
+        config_name = 'the_nano_config.py' 
+    else:
+        config_name = 'the_nano_config_{}.py'.format(chunk_id)
+
+    f_out = open(config_name, 'w+')
     f_out.write(config)
     f_out.close()
 
-    print('\t--> the_nano_config.py created')
+    print('\t--> {} created'.format(config_name))
 
 
   def prepare_CRAB_config(self, key):
@@ -249,7 +267,7 @@ class NanoLauncher(object):
           c = key,
           )
 
-    units_per_job = 5 # 10
+    units_per_job = 3 # 10
 
     config = [
       "from CRABClient.UserUtilities import config, ClientException",
@@ -303,18 +321,60 @@ class NanoLauncher(object):
     print('\t--> the_crab_config.py created')
 
 
+  def prepare_condor_config(self, chunk_id):
+
+    logdir = './log/{}'.format(self.prodlabel)
+    if self.tagnano != None: logdir += '_{}'.format(self.tagnano)
+    if not path.exists(logdir):
+        os.makedirs(logdir)
+
+    #TODO implement option
+    maxtime = 12 * 60 * 60 # in seconds
+    #maxtime = 0.3 * 60 * 60 # in seconds #FIXME
+
+    config = [
+       "universe              = vanilla",
+       "executable            = the_submitter_{}.sh".format(chunk_id),
+       "mylogfile             = {}/job_{}_$(ClusterId)_$(ProcId).log".format(logdir, chunk_id),
+       "log                   = $(mylogfile)",
+       "output                = $(mylogfile)",
+       "error                 = $(mylogfile)",
+       "should_transfer_files = Yes",
+       "use_x509userproxy     = true",
+       "getenv                = True",
+       "environment           = 'LS_SUBCWD={}'".format(os.getcwd()),
+       "request_memory        = 2500",
+       "+MaxRuntime           = {}".format(maxtime),
+       "+AccountingGroup      = 'group_u_CMST3.all'",
+       "queue",
+      ]
+
+    config = '\n'.join(config)
+
+    f_out = open('the_condor_config.sub', 'w+')
+    f_out.write(config)
+    f_out.close()
+
+    print('\t--> the_condor_config.sub created')
+
+
   def prepare_submitter(self, chunk_id):
+                
+    workdir = '/tmp/{}/{}_{}/'.format(self.user, self.prodlabel, chunk_id)
+
     submitter = [
       '#!/bin/bash',
-      'workdir="/tmp/{}/{}_{}/"'.format(self.user, self.prodlabel, chunk_id),
+      'cmsenv',
+      'workdir="{}"'.format(workdir),
       'echo "creating workdir "$workdir',
       'mkdir -p $workdir',
       'echo "copying driver to workdir"',
-      'cp the_nano_config.py $workdir',
+      'cp {}/the_nano_config_{}.py $workdir'.format(os.getcwd(), chunk_id),
       'cd $workdir',
       'echo "going to run nano step"',
       'DATE_START=`date +%s`',
-      'cmsRun the_nano_config.py',
+      'cmsRun {}/the_nano_config_{}.py'.format(workdir, chunk_id),
+      #'cmsRun the_nano_config.py maxEvents=1000', #FIXME!
       'DATE_END=`date +%s`',
       'echo "finished running nano step"',
       'echo "content of the workdir"',
@@ -326,18 +386,18 @@ class NanoLauncher(object):
       'mv {} $outdir'.format(self.outfilename_nano),
       'cd $CMSSW_BASE/src/PhysicsTools/CPVNano/test',
       'echo "clearing the workdir"',
-      '#rm -r $workdir',
+      'rm -r $workdir',
       'runtime=$((DATE_END-DATE_START))',
       'echo "Wallclock running time: $runtime s"',
       ]
 
     submitter = '\n'.join(submitter)
 
-    f_out = open('the_submitter.sh', 'w+')
+    f_out = open('the_submitter_{}.sh'.format(chunk_id), 'w+')
     f_out.write(submitter)
     f_out.close()
 
-    print('\t--> the_submitter.sh created')
+    print('\t--> the_submitter_{}.sh created'.format(chunk_id))
 
 
   def submit_crab(self):
@@ -349,6 +409,11 @@ class NanoLauncher(object):
 
       command_rm_crab = 'rm the_crab_config.py'
       os.system(command_rm_crab)
+
+
+  def submit_condor(self):
+      command = 'condor_submit -batch-name nano_{} the_condor_config.sub'.format(self.prodlabel)
+      os.system(command)
 
 
   def submit_local(self):
@@ -396,17 +461,24 @@ class NanoLauncher(object):
 
             for chunk in chunks:
                 chunk_id = self.get_chunk_id(chunk=chunk)
-                #if chunk_id != 1 and chunk_id != 2: continue
                 print('\n   #-#-#- Chunk{} -#-#-#'.format(chunk_id)) 
 
                 print('\n   -> Preparing nano config') 
-                self.prepare_nano_config(chunk=chunk) 
+                self.prepare_nano_config(chunk=chunk, chunk_id=chunk_id) 
 
                 print('\n   -> Preparing submitter') 
                 self.prepare_submitter(chunk_id=chunk_id) 
 
-                print('\n   -> Processing...') 
-                self.submit_local()
+                if self.docondor:
+                    print('\n   -> Preparing condor config') 
+                    self.prepare_condor_config(chunk_id=chunk_id)
+
+                    print('\n   -> Submitting...') 
+                    self.submit_condor()
+
+                else:
+                    print('\n   -> Processing...') 
+                    self.submit_local()
 
     print('\nDone')
 
