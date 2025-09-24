@@ -36,16 +36,6 @@ public:
     pre_vtx_selection_phi_ {cfg.getParameter<std::string>("pre_vtx_selection_phi")},
     post_vtx_selection_phi_ {cfg.getParameter<std::string>("post_vtx_selection_phi")},
 
-    //// selection second phi candidate (phi_2)
-    //k3_selection_ {cfg.getParameter<std::string>("k3_selection")},
-    //k4_selection_ {cfg.getParameter<std::string>("k4_selection")},
-    //pre_vtx_selection_phi2_ {cfg.getParameter<std::string>("pre_vtx_selection_phi2")},
-    //post_vtx_selection_phi2_ {cfg.getParameter<std::string>("post_vtx_selection_phi2")},
-
-    //// selection Bs candidate
-    //pre_vtx_selection_Bs_ {cfg.getParameter<std::string>("pre_vtx_selection_Bs")},
-    //post_vtx_selection_Bs_ {cfg.getParameter<std::string>("post_vtx_selection_Bs")},
-
     // gen-particles
     genParticles_ {consumes<reco::GenParticleCollection>(cfg.getParameter<edm::InputTag>("genParticles"))}, 
     isMC_ {cfg.getParameter<bool>("isMC")},
@@ -75,16 +65,6 @@ private:
   const StringCutObjectSelector<pat::CompositeCandidate> pre_vtx_selection_phi_;
   const StringCutObjectSelector<pat::CompositeCandidate> post_vtx_selection_phi_; 
 
-  //// selection second phi candidate (phi_2)
-  //const StringCutObjectSelector<pat::CompositeCandidate> k3_selection_; 
-  //const StringCutObjectSelector<pat::CompositeCandidate> k4_selection_; 
-  //const StringCutObjectSelector<pat::CompositeCandidate> pre_vtx_selection_phi2_;
-  //const StringCutObjectSelector<pat::CompositeCandidate> post_vtx_selection_phi2_; 
-  //  
-  //// selection Bs candidate
-  //const StringCutObjectSelector<pat::CompositeCandidate> pre_vtx_selection_Bs_;
-  //const StringCutObjectSelector<pat::CompositeCandidate> post_vtx_selection_Bs_; 
-
   // gen-particles
   const edm::EDGetTokenT<reco::GenParticleCollection> genParticles_;
   const bool isMC_;
@@ -99,8 +79,6 @@ private:
 
 void PhiToKKBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const &) const {
 
-  //TODO study strategy for tag muon
-  
   // input
   edm::Handle<pat::CompositeCandidateCollection> kaons;
   evt.getByToken(kaons_, kaons);
@@ -179,14 +157,11 @@ void PhiToKKBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
       if( !pre_vtx_selection_phi_(phi_cand) ) continue;
 
       // fit the kaon tracks to a common vertex
-      //TODO use mass-constrained fit?
       KinVtxFitter fitter_phi(
         {ttracks->at(k1_idx), ttracks->at(k2_idx)},
         {K_MASS, K_MASS}, // force kaon mass
         {K_SIGMA, K_SIGMA}
         );
-        //1.0195
-        //);
 
       if(!fitter_phi.success()) continue;
 
@@ -235,7 +210,7 @@ void PhiToKKBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
 
       // apply pots-fit selection on phi candidate
       //std::cout << "before postfit selection" << std::endl;
-      if(!post_vtx_selection_phi_(phi_cand)) continue; //TODO move to after definition of user floats?
+      if(!post_vtx_selection_phi_(phi_cand)) continue;
       
       //compute ct  
       const float mass_phi_PDG = 1.019460; // GeV 
@@ -341,23 +316,6 @@ void PhiToKKBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
       phi_cand.addUserFloat("phi_k2_covQopPhi", k2_ptr->userFloat("covQopPhi"));
       phi_cand.addUserFloat("phi_k2_covLamPhi", k2_ptr->userFloat("covLamPhi"));
 
-      // apply pots-fit selection on phi candidate
-      //std::cout << "before postfit selection" << std::endl;
-      //if(!post_vtx_selection_phi_(phi_cand)) continue; //TODO move to after definition of user floats?
-      //std::cout << "after postfit phi selection" << std::endl;
-
-      //TODO add? fetch PV
-      //float hnl_lxyz = sqrt(pow(mu0_ptr->vx() - hnl_cand.vx(), 2) + pow(mu0_ptr->vy() - hnl_cand.vy(), 2) + pow(mu0_ptr->vz() - hnl_cand.vz(), 2));
-      //phi_cand.addUserFloat("hnl_l_xyz", hnl_lxyz);
-      //phi_cand.addUserFloat("hnl_ct", hnl_lxyz / (hnl_cand.p4().Beta() * hnl_cand.p4().Gamma()));
-      //phi_cand.addUserFloat("dilepton_vzdiff", fabs(mu0_ptr->vz()-lep_ptr->vz()));
-      //phi_cand.addUserFloat("dilepton_vxdiff", fabs(mu0_ptr->vx()-lep_ptr->vx()));
-      //phi_cand.addUserFloat("dilepton_vydiff", fabs(mu0_ptr->vy()-lep_ptr->vy()));
-      //phi_cand.addUserFloat("dilepton_Lxy"   , sqrt(pow(mu0_ptr->vx()-lep_ptr->vx(), 2) + pow(mu0_ptr->vy()-lep_ptr->vy(), 2)));
-      //phi_cand.addUserFloat("dilepton_Lxyz"  , sqrt(pow(mu0_ptr->vx()-lep_ptr->vx(), 2) + pow(mu0_ptr->vy()-lep_ptr->vy(), 2) + pow(mu0_ptr->vz()-lep_ptr->vz(), 2)));
-      //// difference between the z vertex position of the pion and primary muon
-      //phi_cand.addUserFloat("pion_mu0_vzdiff", fabs(mu0_ptr->vz()-pi_ptr->vz()));
-       
       // computation of cos(theta*), 
       // (angle between the phi's momentum direction in the lab frame and the daughter's momentum direction in the center of mass frame)
       float mass_phi_fitted = fitter_phi.fitted_candidate().mass();
@@ -384,7 +342,6 @@ void PhiToKKBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
       phi_cand.addUserFloat("cos_theta_star_k2", cos_theta_star_k2);
 
       // energy-momentum conservation (lab) 
-      //phi_cand.addUserFloat("energy_diff_phi_daughters_lab", energy_phi_fitted_lab - (energy_k1_fitted_lab + energy_k2_fitted_lab)); 
       phi_cand.addUserFloat("px_diff_phi_daughters_lab", fitter_phi.fitted_candidate().globalMomentum().x() - (fitter_phi.daughter_p4(0).px() + fitter_phi.daughter_p4(1).px())); 
       phi_cand.addUserFloat("py_diff_phi_daughters_lab", fitter_phi.fitted_candidate().globalMomentum().y() - (fitter_phi.daughter_p4(0).py() + fitter_phi.daughter_p4(1).py())); 
       phi_cand.addUserFloat("pz_diff_phi_daughters_lab", fitter_phi.fitted_candidate().globalMomentum().z() - (fitter_phi.daughter_p4(0).pz() + fitter_phi.daughter_p4(1).pz())); 
@@ -404,13 +361,6 @@ void PhiToKKBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
       int k1_isMatched(0), k2_isMatched(0);
       int k1_genIdx(-1), k2_genIdx(-1);
       int genKaon1Mother_genPdgId(-1), genKaon2Mother_genPdgId(-1);
-      //int kaon1Mother_genIdx(-1), kaon2Mother_genIdx(-1);
-      //float pilep_mass_reldiff(99.), lxy_reldiff(99.);
-      //float gen_lxy(-1.);
-      //// species of the B mother
-      //int BMother_isBu = 0;
-      //int BMother_isBd = 0;
-      //int BMother_isBs = 0;
 
       // for MC only
       if(isMC_ == true){
@@ -422,11 +372,6 @@ void PhiToKKBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
         k1_genIdx = k1_ptr->userInt("mcMatchIndex"); 
         k2_genIdx = k2_ptr->userInt("mcMatchIndex"); 
 
-        //float pilep_mass_reco = fitter.fitted_candidate().mass(); // taking the fitted mass 
-        //float pilep_mass_gen = 99.;
-
-        //float mu0_vx_gen(99.), mu0_vy_gen(99.), lep_vx_gen(99.), lep_vy_gen(99.);
-
         if(k1_genIdx != -1){
           // getting the associated gen particles
           edm::Ptr<reco::GenParticle> genKaon1_ptr(genParticles, k1_genIdx);
@@ -434,14 +379,9 @@ void PhiToKKBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
           // index of the associated mother particle
           int genKaon1Mother_genIdx = -1;
           if(genKaon1_ptr->numberOfMothers()>0) genKaon1Mother_genIdx = genKaon1_ptr->motherRef(0).key();
-          //kaon1Mother_genIdx = genKaon1Mother_genIdx;
 
           // getting the mother particle
           edm::Ptr<reco::GenParticle> genKaon1Mother_ptr(genParticles, genKaon1Mother_genIdx);
-
-          // getting vertices
-          //mu0_vx_gen = genPrimaryMuon_ptr->vx();
-          //mu0_vy_gen = genPrimaryMuon_ptr->vy();
 
           // pdgId of the mother particles
           genKaon1Mother_genPdgId = genKaon1Mother_ptr->pdgId();
@@ -459,14 +399,9 @@ void PhiToKKBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
           // index of the associated mother particle
           int genKaon2Mother_genIdx = -1;
           if(genKaon2_ptr->numberOfMothers()>0) genKaon2Mother_genIdx = genKaon2_ptr->motherRef(0).key();
-          //kaon2Mother_genIdx = genKaon2Mother_genIdx;
 
           // getting the mother particle
           edm::Ptr<reco::GenParticle> genKaon2Mother_ptr(genParticles, genKaon2Mother_genIdx);
-
-          // getting vertices
-          //mu0_vx_gen = genPrimaryMuon_ptr->vx();
-          //mu0_vy_gen = genPrimaryMuon_ptr->vy();
 
           // pdgId of the mother particles
           genKaon2Mother_genPdgId = genKaon2Mother_ptr->pdgId();
@@ -477,16 +412,7 @@ void PhiToKKBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
           }
         }
 
-        // computing displacement at gen level
-        //float gen_hnl_lxy = sqrt(pow(mu0_vx_gen - lep_vx_gen, 2) + pow(mu0_vy_gen - lep_vy_gen, 2));
-
-        // computing relative difference between gen and reco quantities
-        //TODO add back?
-        //pilep_mass_reldiff = fabs(pilep_mass_reco - pilep_mass_gen) / pilep_mass_gen;
-        //lxy_reldiff = fabs(lxy.value() - gen_hnl_lxy) / gen_hnl_lxy;
-
         // matching of the full candidate
-        //if(k1_isMatched==1 && k2_isMatched==1 && pi_isMatched==1 && pilep_mass_reldiff<0.1 && primaryMuonMother_genIdx==hnlMother_genIdx && lep_ptr->charge()!=pi_ptr->charge()){
         if(k1_isMatched==1 && k2_isMatched==1 && k1_ptr->charge()!=k2_ptr->charge()){
           isMatched = 1;
         }
@@ -495,11 +421,7 @@ void PhiToKKBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
       phi_cand.addUserInt("isMatched", isMatched);
       phi_cand.addUserInt("k1_isMatched", k1_isMatched);
       phi_cand.addUserInt("k2_isMatched", k2_isMatched);
-      //phi_cand.addUserFloat("pilep_mass_reco_gen_reldiff", pilep_mass_reldiff);
-      //phi_cand.addUserFloat("lxy_reco_gen_reldiff", lxy_reldiff);
-      //phi_cand.addUserFloat("gen_lxy", gen_lxy);
 
-      //ret_value->push_back(phi_cand);
       vector_phi_candidates.emplace_back(phi_cand);   
     }
   }
