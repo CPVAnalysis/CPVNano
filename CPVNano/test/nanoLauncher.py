@@ -6,6 +6,7 @@ from glob import glob
 from bparkingdata_samples_2018 import bpark_samples_2018
 from bparkingdata_samples_2022 import bpark_samples_2022
 from bparkingdata_samples_2024 import bpark_samples_2024
+from signal_samples_2024 import signal_samples_2024
 
 
 def getOptions():
@@ -17,6 +18,7 @@ def getOptions():
   parser.add_argument('--tagnano' , type=str, dest='tagnano'     , help='[optional] tag to be added on the outputfile name of the nano sample'                , default=None)
   parser.add_argument('--data'              , dest='data'        , help='run the nano tool on a data sample'                             , action='store_true', default=False)
   parser.add_argument('--mcprivate'         , dest='mcprivate'   , help='run the BParking nano tool on a private MC sample'              , action='store_true', default=False)
+  parser.add_argument('--mccentral'         , dest='mccentral'   , help='run the BParking nano tool on a central MC sample'              , action='store_true', default=False)
   parser.add_argument('--dosignal'          , dest='dosignal'    , help='run the BToMuMuPi process'                                      , action='store_true', default=False)
   parser.add_argument('--dotageprobe'       , dest='dotageprobe' , help='run the JpsiToMuMu process (tag and probe study)'               , action='store_true', default=False)
   parser.add_argument('--dogeneral'         , dest='dogeneral'   , help='run without process'                                            , action='store_true', default=False)
@@ -28,6 +30,9 @@ def getOptions():
 def checkParser(opt):
   if opt.pl==None:
     raise RuntimeError('Please indicate the production label: for --mcprivate, it has to correspond to the label of the miniAOD')
+
+  if opt.mcprivate==False and opt.mccentral==False and opt.data==False:
+    raise RuntimeError('Please indicate if you want to run on data or MC by adding either --data or --mcprivate or --mccentral to the command line')
 
   if opt.dosignal==False and opt.dotageprobe==False and opt.dogeneral==False:
     raise RuntimeError('Please indicate the process you want to run (--dosignal and/or --dotageprobe and/or --dogeneral)')
@@ -41,6 +46,7 @@ class NanoLauncher(object):
     self.ds          = vars(opt)['ds']
     self.data        = vars(opt)['data']
     self.mcprivate   = vars(opt)['mcprivate']
+    self.mccentral   = vars(opt)['mccentral']
     self.dosignal    = vars(opt)["dosignal"]
     self.dotageprobe = vars(opt)["dotageprobe"]
     self.dogeneral   = vars(opt)["dogeneral"]
@@ -55,17 +61,32 @@ class NanoLauncher(object):
 
     if self.data:
       if self.year == '2018':
-        self.bpark_samples = bpark_samples_2018
+        self.samples = bpark_samples_2018
       elif self.year == '2022':
-        self.bpark_samples = bpark_samples_2022
+        self.samples = bpark_samples_2022
       elif self.year == '2024':
-        self.bpark_samples = bpark_samples_2024
+        self.samples = bpark_samples_2024
 
       if self.ds == None:
-        self.keys = self.bpark_samples.keys()
+        self.keys = self.samples.keys()
       else: # process a specific data set
-        if self.ds not in self.bpark_samples.keys():
-          raise RuntimeError('Please indicate on which period of the BParking dataset you want to run. Label "{}" not recognised. Choose among {}'.format(self.ds, self.bpark_samples.keys()))
+        if self.ds not in self.samples.keys():
+          raise RuntimeError('Please indicate on which period of the BParking dataset you want to run. Label "{}" not recognised. Choose among {}'.format(self.ds, self.samples.keys()))
+        self.keys = [self.ds]
+
+    if self.mccentral:
+      if self.year == '2018':
+        self.samples = signal_samples_2018
+      elif self.year == '2022':
+        self.samples = signal_samples_2022
+      elif self.year == '2024':
+        self.samples = signal_samples_2024
+
+      if self.ds == None:
+        self.keys = self.samples.keys()
+      else: # process a specific data set
+        if self.ds not in self.samples.keys():
+          raise RuntimeError('Please indicate on which signal sample you want to run. Label "{}" not recognised. Choose among {}'.format(self.ds, self.samples.keys()))
         self.keys = [self.ds]
 
 
@@ -85,6 +106,8 @@ class NanoLauncher(object):
 
     if self.data:
       isMC = 'False'
+      isMCCentral = 'False'
+      isMCPrivate = 'False'
       if self.year == '2018':
         json_file = 'https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions18/13TeV/ReReco/Cert_314472-325175_13TeV_17SeptEarlyReReco2018ABC_PromptEraD_Collisions18_JSON.txt'
         gt = '102X_dataRun2_v11'
@@ -100,12 +123,18 @@ class NanoLauncher(object):
       else:
         raise RuntimeError('Please insert GT, json and era for year {}'.format(self.year))
 
-    elif self.mcprivate:
+    elif self.mcprivate or self.mccentral:
       isMC = 'True'
+      isMCCentral = 'True' if self.mccentral else 'False'
+      isMCPrivate = 'True' if self.mcprivate else 'False'
       if self.year == '2018':
         json_file = ''
-        gt = '102X_upgrade2018_realistic_v15'
+        gt = '102X_upgrade2018_realistic_v15' #FIXME move to UL GT!
         era = 'Run2_2018'
+      elif self.year == '2024':
+        json_file = ''
+        gt = '150X_mcRun3_2024_realistic_v2'
+        era = 'Run3_2024'
       else:
         raise RuntimeError('Please insert GT, json and era for year {}'.format(self.year))
 
@@ -114,6 +143,8 @@ class NanoLauncher(object):
       "from glob import glob",
       "",
       "isMC = {}".format(isMC),
+      "isMCCentral = {}".format(isMCCentral),
+      "isMCPrivate = {}".format(isMCPrivate),
       "globaltag = '{}'".format(gt),
       "json_file = '{}'".format(json_file),
       "doSignal = {}".format(doSignal),
@@ -123,7 +154,7 @@ class NanoLauncher(object):
       "addProbeTracksCollection = cms.untracked.bool({})".format(addProbeTracksCollection),
       "reportEvery = 1000",
       "",
-      "if isMC:",
+      "if isMCPrivate:",
       "   inputFiles = ['file:%s' %i for i in glob('{}/step4_*.root')]".format(chunk),
       "from Configuration.StandardSequences.Eras import eras",
       "process = cms.Process('BParkNANO',eras.{})".format(era),
@@ -145,7 +176,7 @@ class NanoLauncher(object):
       "",
       "process.source = cms.Source(",
       "    'PoolSource',",
-      "    fileNames = cms.untracked.vstring() if not isMC else cms.untracked.vstring(inputFiles),",
+      "    fileNames = cms.untracked.vstring() if not isMCPrivate else cms.untracked.vstring(inputFiles),",
       "    secondaryFileNames = cms.untracked.vstring(),",
       "    skipEvents=cms.untracked.uint32(0),",
       "    duplicateCheckMode = cms.untracked.string('checkEachFile'),",
@@ -261,7 +292,7 @@ class NanoLauncher(object):
 
     config = '\n'.join(config)
 
-    if self.data:
+    if self.data or self.mccentral:
         config_name = 'the_nano_config.py' 
     else:
         config_name = 'the_nano_config_{}.py'.format(chunk_id)
@@ -274,7 +305,7 @@ class NanoLauncher(object):
 
 
   def prepare_CRAB_config(self, key):
-    dataset = self.bpark_samples[key] 
+    dataset = self.samples[key] 
 
     label = '{}_{}'.format(self.prodlabel, key)
 
@@ -284,6 +315,15 @@ class NanoLauncher(object):
           b = self.year, 
           c = key,
           )
+    elif self.mccentral:
+      outdir = '/store/group/phys_bphys/anlyon/CPVGen/signal_central/{a}/{b}/{c}'.format(
+          a = self.prodlabel,
+          b = self.year, 
+          c = key,
+          )
+    else:
+      raise RuntimeError('Please insert info for that data type')
+
 
     units_per_job = 3 # 10
     max_time_min = 130
@@ -454,8 +494,25 @@ class NanoLauncher(object):
 
     if self.data:
       for key in self.keys:
-        dataset = self.bpark_samples[key]
+        dataset = self.samples[key]
         print('\n-> Processing data set {}'.format(dataset)) 
+
+        print('\n   -> Preparing nano config') 
+        self.prepare_nano_config() 
+
+        print('\n   -> Preparing CRAB config') 
+        self.prepare_CRAB_config(key=key) 
+
+        if self.dosubmit:
+            print('\n   -> Submitting...') 
+            self.submit_crab()
+
+        print('\n   -> Submission completed')
+
+    if self.mccentral:
+      for key in self.keys:
+        dataset = self.samples[key]
+        print('\n-> Processing signal sample {}'.format(dataset)) 
 
         print('\n   -> Preparing nano config') 
         self.prepare_nano_config() 
