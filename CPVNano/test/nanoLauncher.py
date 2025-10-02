@@ -6,6 +6,7 @@ from glob import glob
 from bparkingdata_samples_2018 import bpark_samples_2018
 from bparkingdata_samples_2022 import bpark_samples_2022
 from bparkingdata_samples_2024 import bpark_samples_2024
+from signal_samples_2018 import signal_samples_2018
 from signal_samples_2024 import signal_samples_2024
 
 
@@ -110,7 +111,7 @@ class NanoLauncher(object):
       isMCPrivate = 'False'
       if self.year == '2018':
         json_file = 'https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions18/13TeV/ReReco/Cert_314472-325175_13TeV_17SeptEarlyReReco2018ABC_PromptEraD_Collisions18_JSON.txt'
-        gt = '102X_dataRun2_v11'
+        gt = '106X_dataRun2_v37'
         era = 'Run2_2018'
       elif self.year == '2022':
         json_file = 'https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions22/Cert_Collisions2022_355100_362760_Golden.json'
@@ -129,7 +130,7 @@ class NanoLauncher(object):
       isMCPrivate = 'True' if self.mcprivate else 'False'
       if self.year == '2018':
         json_file = ''
-        gt = '102X_upgrade2018_realistic_v15' #FIXME move to UL GT!
+        gt = '106X_upgrade2018_realistic_v16_L1v1'
         era = 'Run2_2018'
       elif self.year == '2024':
         json_file = ''
