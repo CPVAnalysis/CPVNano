@@ -14,12 +14,15 @@ def getOptions():
   from argparse import ArgumentParser
   parser = ArgumentParser(description='Script to launch the nanoAOD tool on top of miniAOD files', add_help=True)
   parser.add_argument('--pl'      , type=str, dest='pl'          , help='label of the sample file'                                                            , default=None)
-  parser.add_argument('--ds'      , type=str, dest='ds'          , help='[optional | data/mccentral] run on specify data set. e.g "--ds D1"'                  , default=None)
+  parser.add_argument('--ds'      , type=str, dest='ds'          , help='[optional | data/sigcentral] run on specify data set. e.g "--ds D1"'                  , default=None)
   parser.add_argument('--year'    , type=str, dest='year'        , help='year to process in data'                                                             , default=None)
   parser.add_argument('--tagnano' , type=str, dest='tagnano'     , help='[optional] tag to be added on the outputfile name of the nano sample'                , default=None)
+  parser.add_argument('--tagflat' , type=str, dest='tagflat'     , help='[optional] tag to be added on the outputfile name of the flat sample'                , default=None)
   parser.add_argument('--data'              , dest='data'        , help='run the nano tool on a data sample'                             , action='store_true', default=False)
   parser.add_argument('--mcprivate'         , dest='mcprivate'   , help='run the BParking nano tool on a private MC sample'              , action='store_true', default=False)
-  parser.add_argument('--mccentral'         , dest='mccentral'   , help='run the BParking nano tool on a central MC sample'              , action='store_true', default=False)
+  parser.add_argument('--sigcentral'        , dest='sigcentral'  , help='run the BParking nano tool on a central MC sample'              , action='store_true', default=False)
+  parser.add_argument('--donano'            , dest='donano'      , help='launch the nano tool on top of the minifile'                    , action='store_true', default=False)
+  parser.add_argument('--doflat'            , dest='doflat'      , help='launch the ntupliser on top of the nanofile'                    , action='store_true', default=False)
   parser.add_argument('--dosignal'          , dest='dosignal'    , help='run the BToMuMuPi process'                                      , action='store_true', default=False)
   parser.add_argument('--dotageprobe'       , dest='dotageprobe' , help='run the JpsiToMuMu process (tag and probe study)'               , action='store_true', default=False)
   parser.add_argument('--dogeneral'         , dest='dogeneral'   , help='run without process'                                            , action='store_true', default=False)
@@ -32,8 +35,11 @@ def checkParser(opt):
   if opt.pl==None:
     raise RuntimeError('Please indicate the production label: for --mcprivate, it has to correspond to the label of the miniAOD')
 
-  if opt.mcprivate==False and opt.mccentral==False and opt.data==False:
-    raise RuntimeError('Please indicate if you want to run on data or MC by adding either --data or --mcprivate or --mccentral to the command line')
+  if opt.mcprivate==False and opt.sigcentral==False and opt.data==False:
+    raise RuntimeError('Please indicate if you want to run on data or MC by adding either --data or --mcprivate or --sigcentral to the command line')
+
+  if opt.donano==False and opt.doflat==False:
+    raise RuntimeError('Please indicate if you want to run the nano tool (--donano) and/or the ntupliser (--doflat)')
 
   if opt.dosignal==False and opt.dotageprobe==False and opt.dogeneral==False:
     raise RuntimeError('Please indicate the process you want to run (--dosignal and/or --dotageprobe and/or --dogeneral)')
@@ -44,10 +50,13 @@ class NanoLauncher(object):
     self.prodlabel   = vars(opt)['pl']
     self.year        = vars(opt)['year']
     self.tagnano     = vars(opt)['tagnano']
+    self.tagflat     = vars(opt)['tagflat']
     self.ds          = vars(opt)['ds']
     self.data        = vars(opt)['data']
     self.mcprivate   = vars(opt)['mcprivate']
-    self.mccentral   = vars(opt)['mccentral']
+    self.sigcentral  = vars(opt)['sigcentral']
+    self.donano      = vars(opt)["donano"]
+    self.doflat      = vars(opt)["doflat"]
     self.dosignal    = vars(opt)["dosignal"]
     self.dotageprobe = vars(opt)["dotageprobe"]
     self.dogeneral   = vars(opt)["dogeneral"]
@@ -75,7 +84,7 @@ class NanoLauncher(object):
           raise RuntimeError('Please indicate on which period of the BParking dataset you want to run. Label "{}" not recognised. Choose among {}'.format(self.ds, self.samples.keys()))
         self.keys = [self.ds]
 
-    if self.mccentral:
+    if self.sigcentral:
       if self.year == '2018':
         self.samples = signal_samples_2018
       elif self.year == '2022':
@@ -96,6 +105,12 @@ class NanoLauncher(object):
       chunk_id = int(chunk[idx+1:len(chunk)])
 
       return chunk_id
+
+
+  def create_flat_directory(self, chunk):
+    outdir = chunk + '/flat'
+    if not path.exists(outdir):
+        os.makedirs(outdir)
 
 
   def prepare_nano_config(self, chunk=None, chunk_id=0):
@@ -124,9 +139,9 @@ class NanoLauncher(object):
       else:
         raise RuntimeError('Please insert GT, json and era for year {}'.format(self.year))
 
-    elif self.mcprivate or self.mccentral:
+    elif self.mcprivate or self.sigcentral:
       isMC = 'True'
-      isMCCentral = 'True' if self.mccentral else 'False'
+      isMCCentral = 'True' if self.sigcentral else 'False'
       isMCPrivate = 'True' if self.mcprivate else 'False'
       if self.year == '2018':
         json_file = ''
@@ -293,7 +308,7 @@ class NanoLauncher(object):
 
     config = '\n'.join(config)
 
-    if self.data or self.mccentral:
+    if self.data or self.sigcentral:
         config_name = 'the_nano_config.py' 
     else:
         config_name = 'the_nano_config_{}.py'.format(chunk_id)
@@ -316,7 +331,7 @@ class NanoLauncher(object):
           b = self.year, 
           c = key,
           )
-    elif self.mccentral:
+    elif self.sigcentral:
       outdir = '/store/group/phys_bphys/anlyon/CPVGen/signal_central/{a}/{b}/{c}'.format(
           a = self.prodlabel,
           b = self.year, 
@@ -326,7 +341,7 @@ class NanoLauncher(object):
       raise RuntimeError('Please insert info for that data type')
 
 
-    units_per_job = 3 # 10
+    units_per_job = 4 # 3 # 10
     max_time_min = 130
     max_mem_MB = 2100
 
@@ -382,7 +397,59 @@ class NanoLauncher(object):
     print('\t--> the_crab_config.py created')
 
 
-  def prepare_condor_config(self, chunk_id):
+  def prepare_dumper_starter(self, chunk, starter_name):
+     infilename = 'bparknano_*.root' if self.tagnano == None else 'bparknano_{}_*.root'.format(self.tagnano) 
+     list_files = [f for f in glob('{}/{}'.format(chunk, infilename))]
+
+     outname = 'flat_bparknano'
+     if self.tagnano != None: outname += '_' + self.tagnano
+     if self.tagflat != None: outname += '_' + self.tagflat
+     outfilename = '{}/flat/{}.root'.format(chunk, outname)
+
+     #chunk_id = self.get_chunk_id(chunk=chunk)
+     #if not path.exists('./condor'): os.makedirs('./condor')
+     #starter_name = './condor/starter_{}_{}'.format(self.prodlabel, chunk_id)
+
+     event_chain = []
+     event_chain.append('TChain * c = new TChain("Events");')
+     #for f in list_files:
+     for ifile, f in enumerate(list_files):
+       #if ifile > 1: continue #FIXME
+       event_chain.append('  c->Add("{}");'.format(f))
+     if self.dosignal: event_chain.append('  c->Process("BsToPhiPhiTo4KDumper.C+", outFileName);')
+     event_chain = '\n'.join(event_chain)
+
+     if self.data:
+       addMC = ''
+     else:
+       addMC = 'outFileName += "_isSignalMC";'
+  
+     content = [
+        '#include "TChain.h"',
+        '#include <iostream>',
+        'void starter(){',
+        #'void {strn}'.format(strn=starter_name + '(){'),
+           '  TString outFileName = "{outf}";'.format(outf=outfilename),
+           '  {addMC}'.format(addMC = addMC),
+           '  {chain}'.format(chain=event_chain),
+           '}',
+           ]
+  
+     content = '\n'.join(content)
+  
+     starter = './condor/{}.C'.format(starter_name)
+     f_starter = open(starter, 'w+')
+     f_starter.write(content)
+     f_starter.close()
+     print('\t--> {} created'.format(starter))
+  
+     #command_cp = 'cp {} {}/flat'.format(starter, path)
+     #os.system(command_cp)
+  
+     #return starter
+
+
+  def prepare_condor_config(self, chunk_id, submitter_name):
 
     logdir = './log/{}'.format(self.prodlabel)
     if self.tagnano != None: logdir += '_{}'.format(self.tagnano)
@@ -390,12 +457,15 @@ class NanoLauncher(object):
         os.makedirs(logdir)
 
     #TODO implement option
-    maxtime = 12 * 60 * 60 # in seconds
+    if self.donano:
+        maxtime = 12 * 60 * 60 # in seconds
+    elif self.doflat:
+        maxtime = 12 * 60 * 60 # in seconds
     #maxtime = 0.3 * 60 * 60 # in seconds #FIXME
 
     config = [
        "universe              = vanilla",
-       "executable            = the_submitter_{}.sh".format(chunk_id),
+       "executable            = ./condor/{}.sh".format(submitter_name),
        "mylogfile             = {}/job_{}_$(ClusterId)_$(ProcId).log".format(logdir, chunk_id),
        "log                   = $(mylogfile)",
        "output                = $(mylogfile)",
@@ -461,6 +531,49 @@ class NanoLauncher(object):
     print('\t--> the_submitter_{}.sh created'.format(chunk_id))
 
 
+  def prepare_submitter_dumper(self, chunk_id, starter_name, submitter_name):
+                
+    workdir = '/tmp/{}/dumper_{}_{}/'.format(self.user, self.prodlabel, chunk_id)
+    starter = './condor/' + starter_name + '.C'
+
+    submitter = [
+      '#!/bin/bash',
+      'cmsenv',
+      'startdir={}'.format(os.getcwd()),
+      'workdir="{}"'.format(workdir),
+      'echo "creating workdir "$workdir',
+      'mkdir -p $workdir',
+      'echo "copying scripts to workdir"',
+      'mv $startdir/{} $workdir/starter.C'.format(starter),
+      'cp $startdir/../plugins/dumper/utils.C $workdir',
+      'cp $startdir/../plugins/dumper/BsToPhiPhiTo4KDumper.C $workdir',
+      'cp $startdir/../plugins/dumper/BsToPhiPhiTo4KDumper.h $workdir',
+      'cd $workdir',
+      'echo "going to run the ntupliser"',
+      'DATE_START_DUMP=`date +%s`',
+      'root -l -q -b starter.C+', 
+      'DATE_END_DUMP=`date +%s`',
+      'echo "finished running the ntupliser"',
+      'echo "content of the workdir"',
+      'ls -l',
+      'cd $startdir/',
+      'echo "clearing the workdir"',
+      'rm -r $workdir',
+      'rm ./condor/{}.sh'.format(submitter_name),
+      'runtime=$((DATE_END-DATE_START))',
+      'echo "Wallclock running time: $runtime s"',
+      ]
+
+    submitter = '\n'.join(submitter)
+
+    outname = './condor/' + submitter_name + '.sh'
+    f_out = open(outname, 'w+')
+    f_out.write(submitter)
+    f_out.close()
+
+    print('\t--> {} created'.format(outname))
+
+
   def submit_crab(self):
       command = 'crab submit -c the_crab_config.py'
       os.system(command)
@@ -472,9 +585,12 @@ class NanoLauncher(object):
       os.system(command_rm_crab)
 
 
-  def submit_condor(self):
-      command = 'condor_submit -batch-name nano_{} the_condor_config.sub'.format(self.prodlabel)
+  def submit_condor(self, job_name):
+      command = 'condor_submit -batch-name {} the_condor_config.sub'.format(job_name)
       os.system(command)
+
+      command_rm = 'rm the_condor_config.sub'
+      os.system(command_rm)
 
 
   def submit_local(self):
@@ -498,34 +614,71 @@ class NanoLauncher(object):
         dataset = self.samples[key]
         print('\n-> Processing data set {}'.format(dataset)) 
 
-        print('\n   -> Preparing nano config') 
-        self.prepare_nano_config() 
+        if self.donano:
+            print('\n   -> Preparing nano config') 
+            self.prepare_nano_config() 
 
-        print('\n   -> Preparing CRAB config') 
-        self.prepare_CRAB_config(key=key) 
+            print('\n   -> Preparing CRAB config') 
+            self.prepare_CRAB_config(key=key) 
 
-        if self.dosubmit:
-            print('\n   -> Submitting...') 
-            self.submit_crab()
+            if self.dosubmit:
+                print('\n   -> Submitting...') 
+                self.submit_crab()
 
-        print('\n   -> Submission completed')
+            print('\n   -> Submission completed')
 
-    if self.mccentral:
+        elif self.doflat:
+            if not path.exists('./condor'): os.makedirs('./condor')
+
+            path_dir = '/eos/cms/store/group/phys_bphys/{}/CPVGen/data/{}/{}/{}/*/*/*/*'.format(self.user, self.prodlabel, self.year, key)
+            chunks = [f for f in glob(path_dir)]
+
+            for chunk in chunks:
+                chunk_id = self.get_chunk_id(chunk=chunk)
+                print('\n   #-#-#- Chunk{} -#-#-#'.format(chunk_id)) 
+
+                print('\n   -> Creating directory') 
+                self.create_flat_directory(chunk=chunk)
+
+                print('\n   -> Preparing dumper starter') 
+                starter_name = 'starter_{}_{}_{}'.format(self.prodlabel, key, chunk_id)
+                if self.tagnano != None: starter_name += '_' + self.tagnano
+                if self.tagflat != None: starter_name += '_' + self.tagflat
+
+                self.prepare_dumper_starter(chunk=chunk, starter_name=starter_name)
+
+                print('\n   -> Preparing dumper submitter') 
+                submitter_name = 'the_submitter_dumper_{}_{}_{}'.format(self.prodlabel, key, chunk_id)
+                if self.tagnano != None: submitter_name += '_' + self.tagnano
+                if self.tagflat != None: submitter_name += '_' + self.tagflat
+
+                self.prepare_submitter_dumper(chunk_id=chunk_id, starter_name=starter_name, submitter_name=submitter_name)
+
+                print('\n   -> Preparing condor config') 
+                self.prepare_condor_config(chunk_id=chunk_id, submitter_name=submitter_name)
+
+                if self.dosubmit:
+                    print('\n   -> Submitting...') 
+                    job_name = 'dumperstep_{}_{}_{}'.format(self.prodlabel, key, chunk_id) 
+                    self.submit_condor(job_name=job_name)
+
+    if self.sigcentral:
       for key in self.keys:
         dataset = self.samples[key]
         print('\n-> Processing signal sample {}'.format(dataset)) 
 
-        print('\n   -> Preparing nano config') 
-        self.prepare_nano_config() 
+        if self.donano:
+            print('\n   -> Preparing nano config') 
+            self.prepare_nano_config() 
 
-        print('\n   -> Preparing CRAB config') 
-        self.prepare_CRAB_config(key=key) 
+            print('\n   -> Preparing CRAB config') 
+            self.prepare_CRAB_config(key=key) 
 
-        if self.dosubmit:
-            print('\n   -> Submitting...') 
-            self.submit_crab()
+            if self.dosubmit:
+                print('\n   -> Submitting...') 
+                self.submit_crab()
 
-        print('\n   -> Submission completed')
+            print('\n   -> Submission completed')
 
 
     if self.mcprivate:
@@ -542,24 +695,25 @@ class NanoLauncher(object):
                 chunk_id = self.get_chunk_id(chunk=chunk)
                 print('\n   #-#-#- Chunk{} -#-#-#'.format(chunk_id)) 
 
-                print('\n   -> Preparing nano config') 
-                self.prepare_nano_config(chunk=chunk, chunk_id=chunk_id) 
+                if self.donano:
+                    print('\n   -> Preparing nano config') 
+                    self.prepare_nano_config(chunk=chunk, chunk_id=chunk_id) 
 
-                print('\n   -> Preparing submitter') 
-                self.prepare_submitter(chunk_id=chunk_id) 
+                    print('\n   -> Preparing submitter') 
+                    self.prepare_submitter(chunk_id=chunk_id) 
 
-                if self.docondor:
-                    print('\n   -> Preparing condor config') 
-                    self.prepare_condor_config(chunk_id=chunk_id)
+                    if self.docondor:
+                        print('\n   -> Preparing condor config') 
+                        self.prepare_condor_config(chunk_id=chunk_id) #FIXME add submitter_name
 
-                    if self.dosubmit:
-                        print('\n   -> Submitting...') 
-                        self.submit_condor()
+                        if self.dosubmit:
+                            print('\n   -> Submitting...') 
+                            self.submit_condor() #FIXME add jobname
 
-                else:
-                    if self.dosubmit:
-                        print('\n   -> Processing...') 
-                        self.submit_local()
+                    else:
+                        if self.dosubmit:
+                            print('\n   -> Processing...') 
+                            self.submit_local()
 
     print('\nDone')
 
