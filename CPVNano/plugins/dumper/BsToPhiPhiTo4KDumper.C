@@ -93,8 +93,8 @@ void BsToPhiPhiTo4KDumper::SlaveBegin(TTree * /*tree*/)
       GenPart_status = {fReader, "GenPart_status"};
       GenPart_statusFlags = {fReader, "GenPart_statusFlags"};
       Muon_genPartIdx = {fReader, "Muon_genPartIdx"};
-      Pileup_nPU = {fReader, "Pileup_nPU"};
-      Pileup_nTrueInt = {fReader, "Pileup_nTrueInt"};
+      //Pileup_nPU = {fReader, "Pileup_nPU"};
+      //Pileup_nTrueInt = {fReader, "Pileup_nTrueInt"};
    }
 
    signal_tree = new TTree("signal_tree", "signal_tree");
@@ -134,10 +134,12 @@ void BsToPhiPhiTo4KDumper::SlaveBegin(TTree * /*tree*/)
    signal_tree->Branch("bs_ly_posbsz", &the_bs_ly_posbsz);
    signal_tree->Branch("bs_lx_posbspv", &the_bs_lx_posbspv);
    signal_tree->Branch("bs_ly_posbspv", &the_bs_ly_posbspv);
+   signal_tree->Branch("bs_lx_posthepv", &the_bs_lx_posthepv);
+   signal_tree->Branch("bs_ly_posthepv", &the_bs_ly_posthepv);
    signal_tree->Branch("bs_ct_2d_cm", &the_bs_ct_2d_cm);
    signal_tree->Branch("bs_ct_2d_cm_posbsz", &the_bs_ct_2d_cm_posbsz);
    signal_tree->Branch("bs_ct_2d_cm_posbspv", &the_bs_ct_2d_cm_posbspv);
-   signal_tree->Branch("bs_ct_3d_cm", &the_bs_ct_3d_cm);
+   signal_tree->Branch("bs_ct_2d_cm_posthepv", &the_bs_ct_2d_cm_posthepv);
    signal_tree->Branch("bs_mass", &the_bs_mass);
    signal_tree->Branch("bs_mass_err", &the_bs_mass_err);
    signal_tree->Branch("bs_mass_corr", &the_bs_mass_corr);
@@ -152,6 +154,22 @@ void BsToPhiPhiTo4KDumper::SlaveBegin(TTree * /*tree*/)
    signal_tree->Branch("bs_vx", &the_bs_vx);
    signal_tree->Branch("bs_vy", &the_bs_vy);
    signal_tree->Branch("bs_vz", &the_bs_vz);
+
+   signal_tree->Branch("cos_theta_k1", &the_cos_theta_k1);
+   signal_tree->Branch("cos_theta_k3", &the_cos_theta_k3);
+   signal_tree->Branch("phi_star", &the_phi_star);
+
+   signal_tree->Branch("the_pv_chi2", &the_pv_chi2);
+   signal_tree->Branch("the_pv_covXX", &the_pv_covXX);
+   signal_tree->Branch("the_pv_covXY", &the_pv_covXY);
+   signal_tree->Branch("the_pv_covXZ", &the_pv_covXZ);
+   signal_tree->Branch("the_pv_covYY", &the_pv_covYY);
+   signal_tree->Branch("the_pv_covYZ", &the_pv_covYZ);
+   signal_tree->Branch("the_pv_covZZ", &the_pv_covZZ);
+   signal_tree->Branch("the_pv_ndof", &the_pv_ndof);
+   signal_tree->Branch("the_pv_x", &the_pv_x);
+   signal_tree->Branch("the_pv_y", &the_pv_y);
+   signal_tree->Branch("the_pv_z", &the_pv_z);
 
    signal_tree->Branch("beamspot_x", &the_beamspot_x);
    signal_tree->Branch("beamspot_y", &the_beamspot_y);
@@ -170,19 +188,6 @@ void BsToPhiPhiTo4KDumper::SlaveBegin(TTree * /*tree*/)
    signal_tree->Branch("deltar_max", &the_deltar_max);
    signal_tree->Branch("deltar_phi1phi2", &the_deltar_phi1phi2);
 
-   signal_tree->Branch("k1_eta", &the_k1_eta);
-   signal_tree->Branch("k1_phi", &the_k1_phi);
-   signal_tree->Branch("k1_pt", &the_k1_pt);
-   signal_tree->Branch("k2_eta", &the_k2_eta);
-   signal_tree->Branch("k2_phi", &the_k2_phi);
-   signal_tree->Branch("k2_pt", &the_k2_pt);
-   signal_tree->Branch("k3_eta", &the_k3_eta);
-   signal_tree->Branch("k3_phi", &the_k3_phi);
-   signal_tree->Branch("k3_pt", &the_k3_pt);
-   signal_tree->Branch("k4_eta", &the_k4_eta);
-   signal_tree->Branch("k4_phi", &the_k4_phi);
-   signal_tree->Branch("k4_pt", &the_k4_pt);
-
    signal_tree->Branch("k1k3_mass", &the_k1k3_mass);
    signal_tree->Branch("k1k3_pt", &the_k1k3_pt);
    signal_tree->Branch("k1k4_mass", &the_k1k4_mass);
@@ -198,8 +203,6 @@ void BsToPhiPhiTo4KDumper::SlaveBegin(TTree * /*tree*/)
    signal_tree->Branch("k2_idx", &k2_idx);
    signal_tree->Branch("k3_idx", &k3_idx);
    signal_tree->Branch("k4_idx", &k4_idx);
-
-   signal_tree->Branch("ismatched", &ismatched);
 
    signal_tree->Branch("phi1_eta", &the_phi1_eta);
    signal_tree->Branch("phi1_phi", &the_phi1_phi);
@@ -224,6 +227,13 @@ void BsToPhiPhiTo4KDumper::SlaveBegin(TTree * /*tree*/)
    signal_tree->Branch("phi1_vx", &the_phi1_vx);
    signal_tree->Branch("phi1_vy", &the_phi1_vy);
    signal_tree->Branch("phi1_vz", &the_phi1_vz);
+   signal_tree->Branch("phi1_ct_2d_cm", &the_phi1_ct_2d_cm);
+   signal_tree->Branch("phi1_ct_2d_cm_posbsz", &the_phi1_ct_2d_cm_posbsz);
+   signal_tree->Branch("phi1_ct_2d_cm_posbspv", &the_phi1_ct_2d_cm_posbspv);
+   signal_tree->Branch("phi1_k1_drtrg", &the_phi1_k1_drtrg);
+   signal_tree->Branch("phi1_k2_drtrg", &the_phi1_k2_drtrg);
+   signal_tree->Branch("phi1_k1_dztrg", &the_phi1_k1_dztrg);
+   signal_tree->Branch("phi1_k2_dztrg", &the_phi1_k2_dztrg);
    signal_tree->Branch("phi1_is_matched", &the_phi1_is_matched);
 
    signal_tree->Branch("phi2_eta", &the_phi2_eta);
@@ -249,11 +259,22 @@ void BsToPhiPhiTo4KDumper::SlaveBegin(TTree * /*tree*/)
    signal_tree->Branch("phi2_vx", &the_phi2_vx);
    signal_tree->Branch("phi2_vy", &the_phi2_vy);
    signal_tree->Branch("phi2_vz", &the_phi2_vz);
+   signal_tree->Branch("phi2_ct_2d_cm", &the_phi2_ct_2d_cm);
+   signal_tree->Branch("phi2_ct_2d_cm_posbsz", &the_phi2_ct_2d_cm_posbsz);
+   signal_tree->Branch("phi2_ct_2d_cm_posbspv", &the_phi2_ct_2d_cm_posbspv);
+   signal_tree->Branch("phi2_k1_drtrg", &the_phi2_k1_drtrg);
+   signal_tree->Branch("phi2_k2_drtrg", &the_phi2_k2_drtrg);
+   signal_tree->Branch("phi2_k1_dztrg", &the_phi2_k1_dztrg);
+   signal_tree->Branch("phi2_k2_dztrg", &the_phi2_k2_dztrg);
    signal_tree->Branch("phi2_is_matched", &the_phi2_is_matched);
 
    signal_tree->Branch("phi1_pt_times_phi2_pt", &the_phi1_pt_times_phi2_pt);
 
+   signal_tree->Branch("k1_eta", &the_k1_eta);
+   signal_tree->Branch("k1_phi", &the_k1_phi);
+   signal_tree->Branch("k1_pt", &the_k1_pt);
    signal_tree->Branch("k1_dcasig", &the_k1_dcasig);
+   signal_tree->Branch("k1_dcasig_bestpv", &the_k1_dcasig_bestpv);
    signal_tree->Branch("k1_charge", &the_k1_charge);
    signal_tree->Branch("k1_covlamlam", &the_k1_covlamlam);
    signal_tree->Branch("k1_covlamphi", &the_k1_covlamphi);
@@ -265,6 +286,10 @@ void BsToPhiPhiTo4KDumper::SlaveBegin(TTree * /*tree*/)
    signal_tree->Branch("k1_dxysig", &the_k1_dxysig);
    signal_tree->Branch("k1_dz", &the_k1_dz);
    signal_tree->Branch("k1_dzsig", &the_k1_dzsig);
+   signal_tree->Branch("k1_dxy_bestpv", &the_k1_dxy_bestpv);
+   signal_tree->Branch("k1_dxysig_bestpv", &the_k1_dxysig_bestpv);
+   signal_tree->Branch("k1_dz_bestpv", &the_k1_dz_bestpv);
+   signal_tree->Branch("k1_dzsig_bestpv", &the_k1_dzsig_bestpv);
    signal_tree->Branch("k1_normalisedchi2", &the_k1_normalisedchi2);
    signal_tree->Branch("k1_pt_err", &the_k1_pt_err);
    signal_tree->Branch("k1_validfraction", &the_k1_validfraction);
@@ -283,7 +308,11 @@ void BsToPhiPhiTo4KDumper::SlaveBegin(TTree * /*tree*/)
    signal_tree->Branch("k1_numberofvalidpixelhits", &the_k1_numberofvalidpixelhits);
    signal_tree->Branch("k1_qualityindex", &the_k1_qualityindex);
 
+   signal_tree->Branch("k2_eta", &the_k2_eta);
+   signal_tree->Branch("k2_phi", &the_k2_phi);
+   signal_tree->Branch("k2_pt", &the_k2_pt);
    signal_tree->Branch("k2_dcasig", &the_k2_dcasig);
+   signal_tree->Branch("k2_dcasig_bestpv", &the_k2_dcasig_bestpv);
    signal_tree->Branch("k2_charge", &the_k2_charge);
    signal_tree->Branch("k2_covlamlam", &the_k2_covlamlam);
    signal_tree->Branch("k2_covlamphi", &the_k2_covlamphi);
@@ -295,6 +324,10 @@ void BsToPhiPhiTo4KDumper::SlaveBegin(TTree * /*tree*/)
    signal_tree->Branch("k2_dxysig", &the_k2_dxysig);
    signal_tree->Branch("k2_dz", &the_k2_dz);
    signal_tree->Branch("k2_dzsig", &the_k2_dzsig);
+   signal_tree->Branch("k2_dxy_bestpv", &the_k2_dxy_bestpv);
+   signal_tree->Branch("k2_dxysig_bestpv", &the_k2_dxysig_bestpv);
+   signal_tree->Branch("k2_dz_bestpv", &the_k2_dz_bestpv);
+   signal_tree->Branch("k2_dzsig_bestpv", &the_k2_dzsig_bestpv);
    signal_tree->Branch("k2_normalisedchi2", &the_k2_normalisedchi2);
    signal_tree->Branch("k2_pt_err", &the_k2_pt_err);
    signal_tree->Branch("k2_validfraction", &the_k2_validfraction);
@@ -313,7 +346,11 @@ void BsToPhiPhiTo4KDumper::SlaveBegin(TTree * /*tree*/)
    signal_tree->Branch("k2_numberofvalidpixelhits", &the_k2_numberofvalidpixelhits);
    signal_tree->Branch("k2_qualityindex", &the_k2_qualityindex);
 
+   signal_tree->Branch("k3_eta", &the_k3_eta);
+   signal_tree->Branch("k3_phi", &the_k3_phi);
+   signal_tree->Branch("k3_pt", &the_k3_pt);
    signal_tree->Branch("k3_dcasig", &the_k3_dcasig);
+   signal_tree->Branch("k3_dcasig_bestpv", &the_k3_dcasig_bestpv);
    signal_tree->Branch("k3_charge", &the_k3_charge);
    signal_tree->Branch("k3_covlamlam", &the_k3_covlamlam);
    signal_tree->Branch("k3_covlamphi", &the_k3_covlamphi);
@@ -325,6 +362,10 @@ void BsToPhiPhiTo4KDumper::SlaveBegin(TTree * /*tree*/)
    signal_tree->Branch("k3_dxysig", &the_k3_dxysig);
    signal_tree->Branch("k3_dz", &the_k3_dz);
    signal_tree->Branch("k3_dzsig", &the_k3_dzsig);
+   signal_tree->Branch("k3_dxy_bestpv", &the_k3_dxy_bestpv);
+   signal_tree->Branch("k3_dxysig_bestpv", &the_k3_dxysig_bestpv);
+   signal_tree->Branch("k3_dz_bestpv", &the_k3_dz_bestpv);
+   signal_tree->Branch("k3_dzsig_bestpv", &the_k3_dzsig_bestpv);
    signal_tree->Branch("k3_normalisedchi2", &the_k3_normalisedchi2);
    signal_tree->Branch("k3_pt_err", &the_k3_pt_err);
    signal_tree->Branch("k3_validfraction", &the_k3_validfraction);
@@ -343,7 +384,11 @@ void BsToPhiPhiTo4KDumper::SlaveBegin(TTree * /*tree*/)
    signal_tree->Branch("k3_numberofvalidpixelhits", &the_k3_numberofvalidpixelhits);
    signal_tree->Branch("k3_qualityindex", &the_k3_qualityindex);
 
+   signal_tree->Branch("k4_eta", &the_k4_eta);
+   signal_tree->Branch("k4_phi", &the_k4_phi);
+   signal_tree->Branch("k4_pt", &the_k4_pt);
    signal_tree->Branch("k4_dcasig", &the_k4_dcasig);
+   signal_tree->Branch("k4_dcasig_bestpv", &the_k4_dcasig_bestpv);
    signal_tree->Branch("k4_charge", &the_k4_charge);
    signal_tree->Branch("k4_covlamlam", &the_k4_covlamlam);
    signal_tree->Branch("k4_covlamphi", &the_k4_covlamphi);
@@ -355,6 +400,10 @@ void BsToPhiPhiTo4KDumper::SlaveBegin(TTree * /*tree*/)
    signal_tree->Branch("k4_dxysig", &the_k4_dxysig);
    signal_tree->Branch("k4_dz", &the_k4_dz);
    signal_tree->Branch("k4_dzsig", &the_k4_dzsig);
+   signal_tree->Branch("k4_dxy_bestpv", &the_k4_dxy_bestpv);
+   signal_tree->Branch("k4_dxysig_bestpv", &the_k4_dxysig_bestpv);
+   signal_tree->Branch("k4_dz_bestpv", &the_k4_dz_bestpv);
+   signal_tree->Branch("k4_dzsig_bestpv", &the_k4_dzsig_bestpv);
    signal_tree->Branch("k4_normalisedchi2", &the_k4_normalisedchi2);
    signal_tree->Branch("k4_pt_err", &the_k4_pt_err);
    signal_tree->Branch("k4_validfraction", &the_k4_validfraction);
@@ -372,6 +421,25 @@ void BsToPhiPhiTo4KDumper::SlaveBegin(TTree * /*tree*/)
    signal_tree->Branch("k4_numberofvalidhits", &the_k4_numberofvalidhits);
    signal_tree->Branch("k4_numberofvalidpixelhits", &the_k4_numberofvalidpixelhits);
    signal_tree->Branch("k4_qualityindex", &the_k4_qualityindex);
+
+   signal_tree->Branch("ismatched", &ismatched);
+   signal_tree->Branch("k1_genidx", &the_k1_genidx);
+   signal_tree->Branch("k2_genidx", &the_k2_genidx);
+   signal_tree->Branch("k3_genidx", &the_k3_genidx);
+   signal_tree->Branch("k4_genidx", &the_k4_genidx);
+   signal_tree->Branch("k1mother_genidx", &the_k1mother_genidx);
+   signal_tree->Branch("k2mother_genidx", &the_k2mother_genidx);
+   signal_tree->Branch("k3mother_genidx", &the_k3mother_genidx);
+   signal_tree->Branch("k4mother_genidx", &the_k4mother_genidx);
+   signal_tree->Branch("k1grandmother_genidx", &the_k1grandmother_genidx);
+   signal_tree->Branch("k2grandmother_genidx", &the_k2grandmother_genidx);
+   signal_tree->Branch("k3grandmother_genidx", &the_k3grandmother_genidx);
+   signal_tree->Branch("k4grandmother_genidx", &the_k4grandmother_genidx);
+   signal_tree->Branch("k1grandgrandmother_genidx", &the_k1grandgrandmother_genidx);
+   signal_tree->Branch("k2grandgrandmother_genidx", &the_k2grandgrandmother_genidx);
+   signal_tree->Branch("k3grandgrandmother_genidx", &the_k3grandgrandmother_genidx);
+   signal_tree->Branch("k4grandgrandmother_genidx", &the_k4grandgrandmother_genidx);
+
 }
 
 Bool_t BsToPhiPhiTo4KDumper::Process(Long64_t entry)
@@ -395,7 +463,7 @@ Bool_t BsToPhiPhiTo4KDumper::Process(Long64_t entry)
    fReader.SetLocalEntry(entry);
 
    // for data, we skip the event in case it doesn't pass the lumi mask
-   if(!isMC && lumiMask(*run, *luminosityBlock) == false) return false;
+   //if(!isMC && lumiMask(*run, *luminosityBlock) == false) return false; //FIXME check
 
    //std::cout << "in process" << std::endl;
 
@@ -423,7 +491,7 @@ Bool_t BsToPhiPhiTo4KDumper::Process(Long64_t entry)
       the_event = *event; 
       the_run = *run;
       the_lumi = *luminosityBlock; 
-      the_pu_ntrueint = *Pileup_nTrueInt;
+      //the_pu_ntrueint = *Pileup_nTrueInt;
       the_pv_npvs = *PV_npvs;
       //the_ntriggermuon = *nTriggerMuon;
 
@@ -451,13 +519,15 @@ Bool_t BsToPhiPhiTo4KDumper::Process(Long64_t entry)
       the_bs_ct_2d_cm = BsToPhiPhiTo4K_Bs_ct_2D_cm[cand_idx];
       the_bs_ct_2d_cm_posbsz = BsToPhiPhiTo4K_Bs_ct_2D_cm_posbsz[cand_idx];
       the_bs_ct_2d_cm_posbspv = BsToPhiPhiTo4K_Bs_ct_2D_cm_posbspv[cand_idx];
-      the_bs_ct_3d_cm = BsToPhiPhiTo4K_Bs_ct_3D_cm[cand_idx];
+      the_bs_ct_2d_cm_posthepv = BsToPhiPhiTo4K_Bs_ct_2D_cm_posthepv[cand_idx];
       the_bs_lx = BsToPhiPhiTo4K_Bs_lx[cand_idx];
       the_bs_ly = BsToPhiPhiTo4K_Bs_ly[cand_idx];
       the_bs_lx_posbsz = BsToPhiPhiTo4K_Bs_lx_posbsz[cand_idx];
       the_bs_ly_posbsz = BsToPhiPhiTo4K_Bs_ly_posbsz[cand_idx];
       the_bs_lx_posbspv = BsToPhiPhiTo4K_Bs_lx_posbspv[cand_idx];
       the_bs_ly_posbspv = BsToPhiPhiTo4K_Bs_ly_posbspv[cand_idx];
+      the_bs_lx_posthepv = BsToPhiPhiTo4K_Bs_lx_posthepv[cand_idx];
+      the_bs_ly_posthepv = BsToPhiPhiTo4K_Bs_ly_posthepv[cand_idx];
       the_bs_mass = BsToPhiPhiTo4K_Bs_mass[cand_idx];
       the_bs_mass_err = BsToPhiPhiTo4K_Bs_massErr[cand_idx];
       the_bs_mass_corr = BsToPhiPhiTo4K_Bs_mass_corr[cand_idx];
@@ -472,6 +542,22 @@ Bool_t BsToPhiPhiTo4KDumper::Process(Long64_t entry)
       the_bs_vx = BsToPhiPhiTo4K_Bs_vx[cand_idx];
       the_bs_vy = BsToPhiPhiTo4K_Bs_vy[cand_idx];
       the_bs_vz = BsToPhiPhiTo4K_Bs_vz[cand_idx];
+
+      the_cos_theta_k1 = BsToPhiPhiTo4K_cos_theta_k1[cand_idx];
+      the_cos_theta_k3 = BsToPhiPhiTo4K_cos_theta_k3[cand_idx];
+      the_phi_star = BsToPhiPhiTo4K_phi_star[cand_idx];
+
+      the_pv_chi2 = BsToPhiPhiTo4K_the_PV_chi2[cand_idx];
+      the_pv_covXX = BsToPhiPhiTo4K_the_PV_covXX[cand_idx];
+      the_pv_covXY = BsToPhiPhiTo4K_the_PV_covXY[cand_idx];
+      the_pv_covXZ = BsToPhiPhiTo4K_the_PV_covXZ[cand_idx];
+      the_pv_covYY = BsToPhiPhiTo4K_the_PV_covYY[cand_idx];
+      the_pv_covYZ = BsToPhiPhiTo4K_the_PV_covYZ[cand_idx];
+      the_pv_covZZ = BsToPhiPhiTo4K_the_PV_covZZ[cand_idx];
+      the_pv_ndof = BsToPhiPhiTo4K_the_PV_ndof[cand_idx];
+      the_pv_x = BsToPhiPhiTo4K_the_PV_x[cand_idx];
+      the_pv_y = BsToPhiPhiTo4K_the_PV_y[cand_idx];
+      the_pv_z = BsToPhiPhiTo4K_the_PV_z[cand_idx];
 
       the_beamspot_x = BsToPhiPhiTo4K_beamspot_x[cand_idx];
       the_beamspot_y = BsToPhiPhiTo4K_beamspot_y[cand_idx];
@@ -490,19 +576,6 @@ Bool_t BsToPhiPhiTo4KDumper::Process(Long64_t entry)
       the_deltar_max = BsToPhiPhiTo4K_deltaR_max[cand_idx];
       the_deltar_phi1phi2 = BsToPhiPhiTo4K_deltaR_phi1phi2[cand_idx];
 
-      the_k1_eta = fabs(BsToPhiPhiTo4K_k1_eta[cand_idx]); 
-      the_k1_phi = BsToPhiPhiTo4K_k1_phi[cand_idx];
-      the_k1_pt = BsToPhiPhiTo4K_k1_pt[cand_idx];
-      the_k2_eta = fabs(BsToPhiPhiTo4K_k2_eta[cand_idx]); 
-      the_k2_phi = BsToPhiPhiTo4K_k2_phi[cand_idx];
-      the_k2_pt = BsToPhiPhiTo4K_k2_pt[cand_idx];
-      the_k3_eta = fabs(BsToPhiPhiTo4K_k3_eta[cand_idx]); 
-      the_k3_phi = BsToPhiPhiTo4K_k3_phi[cand_idx];
-      the_k3_pt = BsToPhiPhiTo4K_k3_pt[cand_idx];
-      the_k4_eta = fabs(BsToPhiPhiTo4K_k4_eta[cand_idx]); 
-      the_k4_phi = BsToPhiPhiTo4K_k4_phi[cand_idx];
-      the_k4_pt = BsToPhiPhiTo4K_k4_pt[cand_idx];
-
       the_k1k3_mass = BsToPhiPhiTo4K_k1k3_mass[cand_idx];
       the_k1k3_pt = BsToPhiPhiTo4K_k1k3_pt[cand_idx];
       the_k1k4_mass = BsToPhiPhiTo4K_k1k4_mass[cand_idx];
@@ -518,8 +591,6 @@ Bool_t BsToPhiPhiTo4KDumper::Process(Long64_t entry)
       k2_idx = BsToPhiPhiTo4K_k2_idx[cand_idx];
       k3_idx = BsToPhiPhiTo4K_k3_idx[cand_idx];
       k4_idx = BsToPhiPhiTo4K_k4_idx[cand_idx];
-
-      ismatched = BsToPhiPhiTo4K_isMatched[cand_idx];
 
       the_phi1_eta = fabs(BsToPhiPhiTo4K_phi1_eta[cand_idx]);
       the_phi1_phi = BsToPhiPhiTo4K_phi1_phi[cand_idx];
@@ -544,6 +615,13 @@ Bool_t BsToPhiPhiTo4KDumper::Process(Long64_t entry)
       the_phi1_vx = PhiToKK_phi_vx[phi1_idx];
       the_phi1_vy = PhiToKK_phi_vy[phi1_idx];
       the_phi1_vz = PhiToKK_phi_vz[phi1_idx];
+      the_phi1_ct_2d_cm = PhiToKK_phi_ct_2D_cm[phi1_idx];
+      the_phi1_ct_2d_cm_posbsz = PhiToKK_phi_ct_2D_cm_posbsz[phi1_idx];
+      the_phi1_ct_2d_cm_posbspv = PhiToKK_phi_ct_2D_cm_posbspv[phi1_idx];
+      the_phi1_k1_drtrg = PhiToKK_phi_k1_drTrg[phi1_idx];
+      the_phi1_k2_drtrg = PhiToKK_phi_k2_drTrg[phi1_idx];
+      the_phi1_k1_dztrg = PhiToKK_phi_k1_dzTrg[phi1_idx];
+      the_phi1_k2_dztrg = PhiToKK_phi_k2_dzTrg[phi1_idx];
       the_phi1_is_matched = PhiToKK_isMatched[phi1_idx];
 
       the_phi2_eta = fabs(BsToPhiPhiTo4K_phi2_eta[cand_idx]);
@@ -569,11 +647,22 @@ Bool_t BsToPhiPhiTo4KDumper::Process(Long64_t entry)
       the_phi2_vx = PhiToKK_phi_vx[phi2_idx];
       the_phi2_vy = PhiToKK_phi_vy[phi2_idx];
       the_phi2_vz = PhiToKK_phi_vz[phi2_idx];
+      the_phi2_ct_2d_cm = PhiToKK_phi_ct_2D_cm[phi2_idx];
+      the_phi2_ct_2d_cm_posbsz = PhiToKK_phi_ct_2D_cm_posbsz[phi2_idx];
+      the_phi2_ct_2d_cm_posbspv = PhiToKK_phi_ct_2D_cm_posbspv[phi2_idx];
+      the_phi2_k1_drtrg = PhiToKK_phi_k1_drTrg[phi2_idx];
+      the_phi2_k2_drtrg = PhiToKK_phi_k2_drTrg[phi2_idx];
+      the_phi2_k1_dztrg = PhiToKK_phi_k1_dzTrg[phi2_idx];
+      the_phi2_k2_dztrg = PhiToKK_phi_k2_dzTrg[phi2_idx];
       the_phi2_is_matched = PhiToKK_isMatched[phi2_idx];
 
       the_phi1_pt_times_phi2_pt = BsToPhiPhiTo4K_phi1_pt[cand_idx] * BsToPhiPhiTo4K_phi2_pt[cand_idx];
 
+      the_k1_eta = fabs(BsToPhiPhiTo4K_k1_eta[cand_idx]); 
+      the_k1_phi = BsToPhiPhiTo4K_k1_phi[cand_idx];
+      the_k1_pt = BsToPhiPhiTo4K_k1_pt[cand_idx];
       the_k1_dcasig = PhiToKK_phi_k1_DCASig[phi1_idx];
+      the_k1_dcasig_bestpv = BsToPhiPhiTo4K_k1_dcasig_pv[cand_idx];
       the_k1_charge = PhiToKK_phi_k1_charge[phi1_idx];
       the_k1_covlamlam = PhiToKK_phi_k1_covLamLam[phi1_idx];
       the_k1_covlamphi = PhiToKK_phi_k1_covLamPhi[phi1_idx];
@@ -585,6 +674,10 @@ Bool_t BsToPhiPhiTo4KDumper::Process(Long64_t entry)
       the_k1_dxysig = PhiToKK_phi_k1_dxyS[phi1_idx];
       the_k1_dz = PhiToKK_phi_k1_dz[phi1_idx];
       the_k1_dzsig = PhiToKK_phi_k1_dzS[phi1_idx];
+      the_k1_dxy_bestpv = BsToPhiPhiTo4K_k1_dxy[cand_idx];
+      the_k1_dxysig_bestpv = BsToPhiPhiTo4K_k1_dxyS[cand_idx];
+      the_k1_dz_bestpv = BsToPhiPhiTo4K_k1_dz[cand_idx];
+      the_k1_dzsig_bestpv = BsToPhiPhiTo4K_k1_dzS[cand_idx];
       the_k1_normalisedchi2 = PhiToKK_phi_k1_normalisedChi2[phi1_idx];
       the_k1_pt_err = PhiToKK_phi_k1_ptErr[phi1_idx];
       the_k1_validfraction = PhiToKK_phi_k1_validFraction[phi1_idx];
@@ -603,7 +696,11 @@ Bool_t BsToPhiPhiTo4KDumper::Process(Long64_t entry)
       the_k1_numberofvalidpixelhits = PhiToKK_phi_k1_numberOfValidPixelHits[phi1_idx];
       the_k1_qualityindex = PhiToKK_phi_k1_qualityIndex[phi1_idx];
 
+      the_k2_eta = fabs(BsToPhiPhiTo4K_k2_eta[cand_idx]); 
+      the_k2_phi = BsToPhiPhiTo4K_k2_phi[cand_idx];
+      the_k2_pt = BsToPhiPhiTo4K_k2_pt[cand_idx];
       the_k2_dcasig = PhiToKK_phi_k2_DCASig[phi1_idx];
+      the_k2_dcasig_bestpv = BsToPhiPhiTo4K_k2_dcasig_pv[cand_idx];
       the_k2_charge = PhiToKK_phi_k2_charge[phi1_idx];
       the_k2_covlamlam = PhiToKK_phi_k2_covLamLam[phi1_idx];
       the_k2_covlamphi = PhiToKK_phi_k2_covLamPhi[phi1_idx];
@@ -615,6 +712,10 @@ Bool_t BsToPhiPhiTo4KDumper::Process(Long64_t entry)
       the_k2_dxysig = PhiToKK_phi_k2_dxyS[phi1_idx];
       the_k2_dz = PhiToKK_phi_k2_dz[phi1_idx];
       the_k2_dzsig = PhiToKK_phi_k2_dzS[phi1_idx];
+      the_k2_dxy_bestpv = BsToPhiPhiTo4K_k2_dxy[cand_idx];
+      the_k2_dxysig_bestpv = BsToPhiPhiTo4K_k2_dxyS[cand_idx];
+      the_k2_dz_bestpv = BsToPhiPhiTo4K_k2_dz[cand_idx];
+      the_k2_dzsig_bestpv = BsToPhiPhiTo4K_k2_dzS[cand_idx];
       the_k2_normalisedchi2 = PhiToKK_phi_k2_normalisedChi2[phi1_idx];
       the_k2_pt_err = PhiToKK_phi_k2_ptErr[phi1_idx];
       the_k2_validfraction = PhiToKK_phi_k2_validFraction[phi1_idx];
@@ -633,7 +734,11 @@ Bool_t BsToPhiPhiTo4KDumper::Process(Long64_t entry)
       the_k2_numberofvalidpixelhits = PhiToKK_phi_k2_numberOfValidPixelHits[phi1_idx];
       the_k2_qualityindex = PhiToKK_phi_k2_qualityIndex[phi1_idx];
 
+      the_k3_eta = fabs(BsToPhiPhiTo4K_k3_eta[cand_idx]); 
+      the_k3_phi = BsToPhiPhiTo4K_k3_phi[cand_idx];
+      the_k3_pt = BsToPhiPhiTo4K_k3_pt[cand_idx];
       the_k3_dcasig = PhiToKK_phi_k1_DCASig[phi2_idx];
+      the_k3_dcasig_bestpv = BsToPhiPhiTo4K_k3_dcasig_pv[cand_idx];
       the_k3_charge = PhiToKK_phi_k1_charge[phi2_idx];
       the_k3_covlamlam = PhiToKK_phi_k1_covLamLam[phi2_idx];
       the_k3_covlamphi = PhiToKK_phi_k1_covLamPhi[phi2_idx];
@@ -645,6 +750,10 @@ Bool_t BsToPhiPhiTo4KDumper::Process(Long64_t entry)
       the_k3_dxysig = PhiToKK_phi_k1_dxyS[phi2_idx];
       the_k3_dz = PhiToKK_phi_k1_dz[phi2_idx];
       the_k3_dzsig = PhiToKK_phi_k1_dzS[phi2_idx];
+      the_k3_dxy_bestpv = BsToPhiPhiTo4K_k3_dxy[cand_idx];
+      the_k3_dxysig_bestpv = BsToPhiPhiTo4K_k3_dxyS[cand_idx];
+      the_k3_dz_bestpv = BsToPhiPhiTo4K_k3_dz[cand_idx];
+      the_k3_dzsig_bestpv = BsToPhiPhiTo4K_k3_dzS[cand_idx];
       the_k3_normalisedchi2 = PhiToKK_phi_k1_normalisedChi2[phi2_idx];
       the_k3_pt_err = PhiToKK_phi_k1_ptErr[phi2_idx];
       the_k3_validfraction = PhiToKK_phi_k1_validFraction[phi2_idx];
@@ -663,7 +772,11 @@ Bool_t BsToPhiPhiTo4KDumper::Process(Long64_t entry)
       the_k3_numberofvalidpixelhits = PhiToKK_phi_k1_numberOfValidPixelHits[phi2_idx];
       the_k3_qualityindex = PhiToKK_phi_k1_qualityIndex[phi2_idx];
 
+      the_k4_eta = fabs(BsToPhiPhiTo4K_k4_eta[cand_idx]); 
+      the_k4_phi = BsToPhiPhiTo4K_k4_phi[cand_idx];
+      the_k4_pt = BsToPhiPhiTo4K_k4_pt[cand_idx];
       the_k4_dcasig = PhiToKK_phi_k2_DCASig[phi2_idx];
+      the_k4_dcasig_bestpv = BsToPhiPhiTo4K_k4_dcasig_pv[cand_idx];
       the_k4_charge = PhiToKK_phi_k2_charge[phi2_idx];
       the_k4_covlamlam = PhiToKK_phi_k2_covLamLam[phi2_idx];
       the_k4_covlamphi = PhiToKK_phi_k2_covLamPhi[phi2_idx];
@@ -675,6 +788,10 @@ Bool_t BsToPhiPhiTo4KDumper::Process(Long64_t entry)
       the_k4_dxysig = PhiToKK_phi_k2_dxyS[phi2_idx];
       the_k4_dz = PhiToKK_phi_k2_dz[phi2_idx];
       the_k4_dzsig = PhiToKK_phi_k2_dzS[phi2_idx];
+      the_k4_dxy_bestpv = BsToPhiPhiTo4K_k4_dxy[cand_idx];
+      the_k4_dxysig_bestpv = BsToPhiPhiTo4K_k4_dxyS[cand_idx];
+      the_k4_dz_bestpv = BsToPhiPhiTo4K_k4_dz[cand_idx];
+      the_k4_dzsig_bestpv = BsToPhiPhiTo4K_k4_dzS[cand_idx];
       the_k4_normalisedchi2 = PhiToKK_phi_k2_normalisedChi2[phi2_idx];
       the_k4_pt_err = PhiToKK_phi_k2_ptErr[phi2_idx];
       the_k4_validfraction = PhiToKK_phi_k2_validFraction[phi2_idx];
@@ -692,6 +809,24 @@ Bool_t BsToPhiPhiTo4KDumper::Process(Long64_t entry)
       the_k4_numberofvalidhits = PhiToKK_phi_k2_numberOfValidHits[phi2_idx];
       the_k4_numberofvalidpixelhits = PhiToKK_phi_k2_numberOfValidPixelHits[phi2_idx];
       the_k4_qualityindex = PhiToKK_phi_k2_qualityIndex[phi2_idx];
+
+      ismatched = BsToPhiPhiTo4K_isMatched[cand_idx];
+      the_k1_genidx = BsToPhiPhiTo4K_k1_genIdx[cand_idx];
+      the_k2_genidx = BsToPhiPhiTo4K_k2_genIdx[cand_idx];
+      the_k3_genidx = BsToPhiPhiTo4K_k3_genIdx[cand_idx];
+      the_k4_genidx = BsToPhiPhiTo4K_k4_genIdx[cand_idx];
+      the_k1mother_genidx = BsToPhiPhiTo4K_genKaon1Mother_genIdx[cand_idx];
+      the_k2mother_genidx = BsToPhiPhiTo4K_genKaon2Mother_genIdx[cand_idx];
+      the_k3mother_genidx = BsToPhiPhiTo4K_genKaon3Mother_genIdx[cand_idx];
+      the_k4mother_genidx = BsToPhiPhiTo4K_genKaon4Mother_genIdx[cand_idx];
+      the_k1grandmother_genidx = BsToPhiPhiTo4K_genKaon1GrandMother_genIdx[cand_idx];
+      the_k2grandmother_genidx = BsToPhiPhiTo4K_genKaon2GrandMother_genIdx[cand_idx];
+      the_k3grandmother_genidx = BsToPhiPhiTo4K_genKaon3GrandMother_genIdx[cand_idx];
+      the_k4grandmother_genidx = BsToPhiPhiTo4K_genKaon4GrandMother_genIdx[cand_idx];
+      the_k1grandgrandmother_genidx = BsToPhiPhiTo4K_genKaon1GrandGrandMother_genIdx[cand_idx];
+      the_k2grandgrandmother_genidx = BsToPhiPhiTo4K_genKaon2GrandGrandMother_genIdx[cand_idx];
+      the_k3grandgrandmother_genidx = BsToPhiPhiTo4K_genKaon3GrandGrandMother_genIdx[cand_idx];
+      the_k4grandgrandmother_genidx = BsToPhiPhiTo4K_genKaon4GrandGrandMother_genIdx[cand_idx];
 
       signal_tree->Fill();
 
@@ -723,7 +858,7 @@ void BsToPhiPhiTo4KDumper::Terminate()
    TString option = GetOption();
    TString outFileName = option;
 
-   std::cout << outFileName << " created" << std::endl;
+   std::cout << " --> " << outFileName << " created" << std::endl;
 
    cout << "- End Bs->PhiPhi->4K Dumper -" << endl;
 
