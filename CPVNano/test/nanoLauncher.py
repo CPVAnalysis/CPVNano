@@ -113,7 +113,7 @@ class NanoLauncher(object):
         os.makedirs(outdir)
 
 
-  def prepare_nano_config(self, chunk=None, chunk_id=0):
+  def prepare_nano_config(self, chunk=None, chunk_id=0, key=None):
     doSignal = 'True' if self.dosignal else 'False' 
     doTagAndProbe = 'True' if self.dotageprobe else 'False'
     doGeneral = 'True' if self.dogeneral else 'False'
@@ -130,8 +130,11 @@ class NanoLauncher(object):
         era = 'Run2_2018'
       elif self.year == '2022':
         json_file = 'https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions22/Cert_Collisions2022_355100_362760_Golden.json'
-        gt = '' # see https://docs.google.com/presentation/d/1F4ndU7DBcyvrEEyLfYqb29NGkBPs20EAnBxe_l7AEII/edit?slide=id.g289f499aa6b_2_52#slide=id.g289f499aa6b_2_52
-        era = ''
+        # see https://docs.google.com/presentation/d/1F4ndU7DBcyvrEEyLfYqb29NGkBPs20EAnBxe_l7AEII/edit?slide=id.g289f499aa6b_2_52#slide=id.g289f499aa6b_2_52
+        if 'C' in key or 'D' in key: gt = '124X_dataRun3_PromptAnalysis_v1'
+        elif 'E' in key: gt = '124X_dataRun3_Prompt_v10'
+        if 'F' in key or 'G' in key: gt = '124X_dataRun3_PromptAnalysis_v2'
+        era = 'Run3'
       elif self.year == '2024':
         json_file = 'https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions24/Cert_Collisions2024_378981_386951_Golden.json'
         gt = '150X_dataRun3_v2'
@@ -147,6 +150,12 @@ class NanoLauncher(object):
         json_file = ''
         gt = '106X_upgrade2018_realistic_v16_L1v1'
         era = 'Run2_2018'
+      # my understanding from https://docs.google.com/presentation/d/1F4ndU7DBcyvrEEyLfYqb29NGkBPs20EAnBxe_l7AEII/edit?slide=id.g289f499aa6b_2_52#slide=id.g289f499aa6b_2_52 is that preEE corresponds to data C/D and postEE E/F/G
+      #elif self.year == '2022':
+      #  json_file = ''
+      #  gt = '130X_mcRun3_2022_realistic_v5' # preEE
+      #  gt = '130X_mcRun3_2022_realistic_postEE_v6' # postEE
+      #  era = 'Run3,run3_miniAOD_12X' #postEE
       elif self.year == '2024':
         json_file = ''
         gt = '150X_mcRun3_2024_realistic_v2'
@@ -533,7 +542,8 @@ class NanoLauncher(object):
 
   def prepare_submitter_dumper(self, chunk_id, starter_name, submitter_name):
                 
-    workdir = '/tmp/{}/dumper_{}_{}/'.format(self.user, self.prodlabel, chunk_id)
+    #workdir = '/tmp/{}/dumper_{}_{}/'.format(self.user, self.prodlabel, chunk_id)
+    workdir = '/tmp/{}/dumper_{}/'.format(self.user, starter_name)
     starter = './condor/' + starter_name + '.C'
 
     submitter = [
@@ -616,7 +626,7 @@ class NanoLauncher(object):
 
         if self.donano:
             print('\n   -> Preparing nano config') 
-            self.prepare_nano_config() 
+            self.prepare_nano_config(key=key) 
 
             print('\n   -> Preparing CRAB config') 
             self.prepare_CRAB_config(key=key) 
@@ -641,14 +651,14 @@ class NanoLauncher(object):
                 self.create_flat_directory(chunk=chunk)
 
                 print('\n   -> Preparing dumper starter') 
-                starter_name = 'starter_{}_{}_{}'.format(self.prodlabel, key, chunk_id)
+                starter_name = 'starter_{}_{}_{}_{}'.format(self.year, self.prodlabel, key, chunk_id)
                 if self.tagnano != None: starter_name += '_' + self.tagnano
                 if self.tagflat != None: starter_name += '_' + self.tagflat
 
                 self.prepare_dumper_starter(chunk=chunk, starter_name=starter_name)
 
                 print('\n   -> Preparing dumper submitter') 
-                submitter_name = 'the_submitter_dumper_{}_{}_{}'.format(self.prodlabel, key, chunk_id)
+                submitter_name = 'the_submitter_dumper_{}_{}_{}_{}'.format(self.year, self.prodlabel, key, chunk_id)
                 if self.tagnano != None: submitter_name += '_' + self.tagnano
                 if self.tagflat != None: submitter_name += '_' + self.tagflat
 
@@ -662,7 +672,7 @@ class NanoLauncher(object):
                     job_name = 'dumperstep_{}_{}_{}'.format(self.prodlabel, key, chunk_id) 
                     self.submit_condor(job_name=job_name)
 
-    if self.sigcentral:
+    elif self.sigcentral:
       for key in self.keys:
         dataset = self.samples[key]
         print('\n-> Processing signal sample {}'.format(dataset)) 
@@ -680,8 +690,43 @@ class NanoLauncher(object):
 
             print('\n   -> Submission completed')
 
+        elif self.doflat:
+            if not path.exists('./condor'): os.makedirs('./condor')
 
-    if self.mcprivate:
+            path_dir = '/eos/cms/store/group/phys_bphys/{}/CPVGen/signal_central/{}/{}/{}/*/*/*/*'.format(self.user, self.prodlabel, self.year, key)
+            chunks = [f for f in glob(path_dir)]
+
+            for chunk in chunks:
+                chunk_id = self.get_chunk_id(chunk=chunk)
+                print('\n   #-#-#- Chunk{} -#-#-#'.format(chunk_id)) 
+
+                print('\n   -> Creating directory') 
+                self.create_flat_directory(chunk=chunk)
+
+                print('\n   -> Preparing dumper starter') 
+                starter_name = 'starter_{}_{}_{}_{}'.format(self.year, self.prodlabel, key, chunk_id)
+                if self.tagnano != None: starter_name += '_' + self.tagnano
+                if self.tagflat != None: starter_name += '_' + self.tagflat
+
+                self.prepare_dumper_starter(chunk=chunk, starter_name=starter_name)
+
+                print('\n   -> Preparing dumper submitter') 
+                submitter_name = 'the_submitter_dumper_{}_{}_{}_{}'.format(self.year, self.prodlabel, key, chunk_id)
+                if self.tagnano != None: submitter_name += '_' + self.tagnano
+                if self.tagflat != None: submitter_name += '_' + self.tagflat
+
+                self.prepare_submitter_dumper(chunk_id=chunk_id, starter_name=starter_name, submitter_name=submitter_name)
+
+                print('\n   -> Preparing condor config') 
+                self.prepare_condor_config(chunk_id=chunk_id, submitter_name=submitter_name)
+
+                if self.dosubmit:
+                    print('\n   -> Submitting...') 
+                    job_name = 'dumperstep_{}_{}_{}_{}'.format(self.year, self.prodlabel, key, chunk_id) 
+                    self.submit_condor(job_name=job_name)
+
+
+    elif self.mcprivate:
         print('\n-> Processing private mc sample {}'.format(self.prodlabel)) 
 
         path_dir = '/eos/cms/store/group/phys_bphys/{}/CPVGen/{}/BsToPhiPhiTo4K/'.format(self.user, self.prodlabel)
