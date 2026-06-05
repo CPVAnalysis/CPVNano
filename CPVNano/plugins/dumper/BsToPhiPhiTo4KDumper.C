@@ -91,7 +91,7 @@ void BsToPhiPhiTo4KDumper::SlaveBegin(TTree * /*tree*/)
       GenPart_genPartIdxMother = {fReader, "GenPart_genPartIdxMother"};
       GenPart_pdgId = {fReader, "GenPart_pdgId"};
       GenPart_status = {fReader, "GenPart_status"};
-      GenPart_statusFlags = {fReader, "GenPart_statusFlags"};
+      //GenPart_statusFlags = {fReader, "GenPart_statusFlags"};
       Muon_genPartIdx = {fReader, "Muon_genPartIdx"};
       //Pileup_nPU = {fReader, "Pileup_nPU"};
       //Pileup_nTrueInt = {fReader, "Pileup_nTrueInt"};
@@ -485,7 +485,7 @@ Bool_t BsToPhiPhiTo4KDumper::Process(Long64_t entry)
       UInt_t cand_idx = pair_candidx_phipt[0].first;
 
       // for signal MC, only keep the matched events
-      //if(isSignalMC && BsToPhiPhiTo4K_isMatched[selectedCandIdx_sig] != 1) return false;
+      if(isSignalMC && BsToPhiPhiTo4K_isMatched[cand_idx] != 1) return false;
 
       // fill the signal_tree
       the_event = *event; 
@@ -857,6 +857,12 @@ void BsToPhiPhiTo4KDumper::Terminate()
 
    TString option = GetOption();
    TString outFileName = option;
+   if(outFileName.Contains("isSignalMC")){
+      outFileName.Resize(outFileName.Length()-11);
+   }
+   else if(outFileName.Contains("isMC")){
+      outFileName.Resize(outFileName.Length()-5);
+   }
 
    std::cout << " --> " << outFileName << " created" << std::endl;
 

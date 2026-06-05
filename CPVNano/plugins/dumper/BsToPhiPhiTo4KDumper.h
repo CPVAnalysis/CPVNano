@@ -451,10 +451,10 @@ public :
    TTreeReaderArray<Float_t> GenPart_vx = {fReader, "BsToPhiPhiTo4K_Bs_eta"};
    TTreeReaderArray<Float_t> GenPart_vy = {fReader, "BsToPhiPhiTo4K_Bs_eta"};
    TTreeReaderArray<Float_t> GenPart_vz = {fReader, "BsToPhiPhiTo4K_Bs_eta"};
-   TTreeReaderArray<Int_t> GenPart_genPartIdxMother = {fReader, "BsToPhiPhiTo4K_k1_idx"};
+   TTreeReaderArray<Short_t> GenPart_genPartIdxMother = {fReader, "SV_charge"};
    TTreeReaderArray<Int_t> GenPart_pdgId = {fReader, "BsToPhiPhiTo4K_k1_idx"};
    TTreeReaderArray<Int_t> GenPart_status = {fReader, "BsToPhiPhiTo4K_k1_idx"};
-   TTreeReaderArray<Int_t> GenPart_statusFlags = {fReader, "BsToPhiPhiTo4K_k1_idx"};
+   //TTreeReaderArray<Int_t> GenPart_statusFlags = {fReader, "BsToPhiPhiTo4K_k1_idx"};
    TTreeReaderArray<Int_t> Muon_genPartIdx = {fReader, "BsToPhiPhiTo4K_k1_idx"};
    // the correct value will be filled for MC only
    //TTreeReaderValue<UInt_t> Pileup_nPU = {fReader, "PV_npvs"};
