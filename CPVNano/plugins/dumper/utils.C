@@ -1,8 +1,11 @@
 #ifndef utils
 #define utils
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-builtins"
 #include "boost/property_tree/ptree.hpp"
 #include "boost/property_tree/json_parser.hpp"
+#pragma GCC diagnostic pop
 
 // ------------------------------------------ //
 //  extra functions needed by the ntupliser
